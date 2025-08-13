@@ -94,15 +94,54 @@ class HurdleAnalyzer {
   
   private generateDemoResults(hurdleHeight: number): AnalysisResult {
     // ハードル高さに基づいて現実的な値を生成
-    const heightFactor = hurdleHeight / 100;
+    let baseValues = {
+      takeoffDistance: 2.0,
+      landingDistance: 1.1,
+      flightTime: 0.32,
+      maxHeight: 25
+    };
+    
+    // カテゴリー別調整
+    if (hurdleHeight <= 76.2) {
+      baseValues = {
+        takeoffDistance: 1.85,
+        landingDistance: 1.05,
+        flightTime: 0.30,
+        maxHeight: 20
+      };
+    } else if (hurdleHeight <= 83.8) {
+      baseValues = {
+        takeoffDistance: 1.95,
+        landingDistance: 1.10,
+        flightTime: 0.32,
+        maxHeight: 22
+      };
+    } else if (hurdleHeight <= 99.1) {
+      baseValues = {
+        takeoffDistance: 2.05,
+        landingDistance: 1.15,
+        flightTime: 0.34,
+        maxHeight: 25
+      };
+    } else {
+      baseValues = {
+        takeoffDistance: 2.10,
+        landingDistance: 1.20,
+        flightTime: 0.36,
+        maxHeight: 28
+      };
+    }
+    
+    // 小さなランダム変動を追加
+    const vary = (base: number, range: number) => base + (Math.random() - 0.5) * range;
     
     return {
-      flightTime: parseFloat((0.32 + Math.random() * 0.12 + heightFactor * 0.03).toFixed(2)),
-      takeoffDistance: parseFloat((1.8 + Math.random() * 0.3 - heightFactor * 0.05).toFixed(2)),
-      landingDistance: parseFloat((1.35 + Math.random() * 0.25 - heightFactor * 0.03).toFixed(2)),
-      takeoffContact: parseFloat((0.12 + Math.random() * 0.03).toFixed(2)),
-      landingContact: parseFloat((0.10 + Math.random() * 0.03).toFixed(2)),
-      maxHeight: parseFloat((42 + Math.random() * 12 + (106.7 - hurdleHeight) * 0.35).toFixed(1)),
+      flightTime: parseFloat(vary(baseValues.flightTime, 0.06).toFixed(3)),
+      takeoffDistance: parseFloat(vary(baseValues.takeoffDistance, 0.2).toFixed(2)),
+      landingDistance: parseFloat(vary(baseValues.landingDistance, 0.15).toFixed(2)),
+      takeoffContact: parseFloat(vary(0.13, 0.02).toFixed(3)),
+      landingContact: parseFloat(vary(0.11, 0.02).toFixed(3)),
+      maxHeight: parseFloat(vary(baseValues.maxHeight, 8).toFixed(1)),
       confidence: 0.85
     };
   }
@@ -325,3 +364,4 @@ class HurdleAnalyzer {
 window.addEventListener("DOMContentLoaded", () => {
   new HurdleAnalyzer();
 });
+
