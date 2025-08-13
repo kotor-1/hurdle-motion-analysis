@@ -2,8 +2,15 @@
 
 let analyzer: any = null;
 
+interface UserProfile {
+  id: string;
+  name: string;
+  grade?: string;
+  lastUsed: string;
+}
+
 interface MetaData {
-  athlete_id?: string;
+  athlete_id: string;
   grade?: string;
   hurdle_height_cm: number;
   fps?: number;
@@ -46,12 +53,13 @@ class HurdleAnalyzer {
   private isAnalyzing = false;
   private progressInterval: any;
   private currentVideo: HTMLVideoElement | null = null;
+  private currentUser: UserProfile | null = null;
   private previousMetrics: Metrics | null = null;
   
   constructor() {
     this.initializeEventListeners();
     this.initializeAnalyzer();
-    this.loadPreviousResults();
+    this.initializeUserSelector();
   }
   
   private async initializeAnalyzer() {
@@ -66,23 +74,201 @@ class HurdleAnalyzer {
     }
   }
   
+  private initializeUserSelector(): void {
+    // ユーザー選択UIを作成
+    const header = document.querySelector("header");
+    if (!header) return;
+    
+    const userSelector = document.createElement("div");
+    userSelector.className = "user-selector";
+    userSelector.innerHTML = `
+      <label>選手</label>
+      <select id="user-select">
+        <option value="">選手を選択</option>
+      </select>
+      <button id="add-user-btn" class="user-btn">➕</button>
+    `;
+    
+    header.appendChild(userSelector);
+    
+    this.loadUsers();
+    
+    // イベントリスナー
+    document.getElementById("user-select")?.addEventListener("change", (e) => {
+      const userId = (e.target as HTMLSelectElement).value;
+      this.selectUser(userId);
+    });
+    
+    document.getElementById("add-user-btn")?.addEventListener("click", () => {
+      this.showAddUserDialog();
+    });
+  }
+  
+  private loadUsers(): void {
+    const users = this.getAllUsers();
+    const select = document.getElementById("user-select") as HTMLSelectElement;
+    if (!select) return;
+    
+    // 既存のオプションをクリア（最初の「選手を選択」以外）
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+    
+    // ユーザーを追加
+    users.forEach(user => {
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent = `${user.name} (${user.grade || "未設定"})`;
+      select.appendChild(option);
+    });
+    
+    // 最後に使用したユーザーを選択
+    const lastUserId = localStorage.getItem("last_user_id");
+    if (lastUserId) {
+      select.value = lastUserId;
+      this.selectUser(lastUserId);
+    }
+  }
+  
+  private getAllUsers(): UserProfile[] {
+    const usersJson = localStorage.getItem("users");
+    if (!usersJson) return [];
+    
+    try {
+      return JSON.parse(usersJson);
+    } catch {
+      return [];
+    }
+  }
+  
+  private saveUser(user: UserProfile): void {
+    const users = this.getAllUsers();
+    const existingIndex = users.findIndex(u => u.id === user.id);
+    
+    if (existingIndex >= 0) {
+      users[existingIndex] = user;
+    } else {
+      users.push(user);
+    }
+    
+    localStorage.setItem("users", JSON.stringify(users));
+  }
+  
+  private selectUser(userId: string): void {
+    if (!userId) {
+      this.currentUser = null;
+      this.previousMetrics = null;
+      return;
+    }
+    
+    const users = this.getAllUsers();
+    const user = users.find(u => u.id === userId);
+    
+    if (user) {
+      this.currentUser = user;
+      user.lastUsed = new Date().toISOString();
+      this.saveUser(user);
+      localStorage.setItem("last_user_id", userId);
+      
+      // このユーザーの前回記録を読み込み
+      this.loadPreviousResults();
+      
+      // UIに名前を表示
+      this.updateUserDisplay();
+    }
+  }
+  
+  private showAddUserDialog(): void {
+    const name = prompt("選手名を入力してください：");
+    if (!name) return;
+    
+    const grade = prompt("学年を入力してください（例: 小学生:ES, 中学生:JHS, 高校:HS）：") || "";
+    
+    const user: UserProfile = {
+      id: `user_${Date.now()}`,
+      name: name,
+      grade: grade,
+      lastUsed: new Date().toISOString()
+    };
+    
+    this.saveUser(user);
+    this.loadUsers();
+    
+    // 新しいユーザーを選択
+    const select = document.getElementById("user-select") as HTMLSelectElement;
+    if (select) {
+      select.value = user.id;
+      this.selectUser(user.id);
+    }
+  }
+  
+  private updateUserDisplay(): void {
+    if (!this.currentUser) return;
+    
+    // 現在のユーザーを表示するバナーを追加/更新
+    let banner = document.getElementById("current-user-banner");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "current-user-banner";
+      banner.className = "user-banner";
+      const main = document.querySelector("main");
+      if (main) {
+        main.insertBefore(banner, main.firstChild);
+      }
+    }
+    
+    banner.innerHTML = `
+      <span class="user-icon">👤</span>
+      <span class="user-name">${this.currentUser.name}</span>
+      <span class="user-grade">${this.currentUser.grade || ""}</span>
+    `;
+  }
+  
   private loadPreviousResults(): void {
-    const saved = localStorage.getItem("previous_metrics");
+    if (!this.currentUser) {
+      this.previousMetrics = null;
+      return;
+    }
+    
+    const key = `metrics_${this.currentUser.id}`;
+    const saved = localStorage.getItem(key);
+    
     if (saved) {
       try {
         this.previousMetrics = JSON.parse(saved);
+        console.log(`前回記録を読み込み: ${this.currentUser.name}`);
       } catch (e) {
-        console.log("前回結果なし");
+        console.log("前回記録の読み込みエラー");
+        this.previousMetrics = null;
       }
+    } else {
+      this.previousMetrics = null;
+      console.log(`${this.currentUser.name}の前回記録なし`);
     }
+  }
+  
+  private savePreviousResults(metrics: Metrics): void {
+    if (!this.currentUser) return;
+    
+    const key = `metrics_${this.currentUser.id}`;
+    localStorage.setItem(key, JSON.stringify(metrics));
+    console.log(`記録を保存: ${this.currentUser.name}`);
   }
   
   private initializeEventListeners(): void {
     document.getElementById("demo-btn")?.addEventListener("click", () => {
+      if (!this.currentUser) {
+        alert("先に選手を選択してください");
+        return;
+      }
       this.runDemoAnalysis();
     });
     
     document.getElementById("upload-btn")?.addEventListener("click", () => {
+      if (!this.currentUser) {
+        alert("先に選手を選択してください");
+        return;
+      }
       document.getElementById("file-input")?.click();
     });
     
@@ -94,6 +280,10 @@ class HurdleAnalyzer {
     });
     
     document.getElementById("capture-btn")?.addEventListener("click", () => {
+      if (!this.currentUser) {
+        alert("先に選手を選択してください");
+        return;
+      }
       this.startCameraCapture();
     });
     
@@ -133,13 +323,16 @@ class HurdleAnalyzer {
         const uiData = this.generateUIData(metrics, this.previousMetrics, qc_flags);
         this.showResults(uiData);
         
-        // 今回の結果を前回として保存
+        // このユーザーの前回記録として保存
+        this.savePreviousResults(metrics);
         this.previousMetrics = metrics;
-        localStorage.setItem("previous_metrics", JSON.stringify(metrics));
       }
       this.updateProgress(progress);
     }, 150);
   }
+  
+  // 以下、既存のメソッドは同じ（generateRealisticMetrics, generateUIData, showResults等）
+  // ... 省略 ...
   
   private generateRealisticMetrics(hurdleHeight: number): Metrics {
     let baseValues = {
@@ -367,7 +560,6 @@ class HurdleAnalyzer {
       }
     ];
     
-    // 撮り直しヒント生成
     let hint = "側面からバー全体が入る位置・水平固定・2〜3秒でOK";
     if (qc_flags.includes("LOW_BAR_CONFIDENCE")) {
       hint = "バー上端と地面が画面にしっかり入る位置で、露出を少し明るめに";
@@ -384,14 +576,12 @@ class HurdleAnalyzer {
     document.getElementById("progress-section")!.style.display = "none";
     document.getElementById("results-section")!.style.display = "block";
     
-    // ヒントを表示
     const hintElement = document.getElementById("capture-hint");
     if (hintElement) {
       hintElement.textContent = uiData.hint;
       hintElement.style.display = "block";
     }
     
-    // カードを動的に生成
     const basicContainer = document.getElementById("basic-metrics-grid");
     const mainContainer = document.getElementById("main-metrics-grid");
     const subContainer = document.getElementById("sub-metrics-grid");
@@ -443,22 +633,88 @@ class HurdleAnalyzer {
     return div;
   }
   
-  private shareResults(): void {
+  private saveResults(): void {
+    if (!this.currentUser) {
+      alert("選手が選択されていません");
+      return;
+    }
+    
+    const metrics = this.getCurrentMetrics();
+    const data = {
+      athlete_id: this.currentUser.id,
+      athlete_name: this.currentUser.name,
+      grade: this.currentUser.grade,
+      timestamp: new Date().toISOString(),
+      hurdle_height_cm: parseFloat((document.getElementById("hurdle-height") as HTMLSelectElement).value),
+      metrics,
+      qc_flags: ["OK"]
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hurdle_${this.currentUser.name}_${Date.now()}.json`;
+    a.click();
+  }
+  
+  private exportToCSV(): void {
+    if (!this.currentUser) {
+      alert("選手が選択されていません");
+      return;
+    }
+    
     const cards = document.querySelectorAll(".metric-item");
-    let text = "ハードル動作解析結果\\n";
+    let csv = `選手名,${this.currentUser.name}\\n`;
+    csv += `学年,${this.currentUser.grade || "未設定"}\\n`;
+    csv += `日時,${new Date().toLocaleString()}\\n`;
+    csv += `ハードル高さ,${(document.getElementById("hurdle-height") as HTMLSelectElement).value}cm\\n\\n`;
+    csv += `項目,値,単位,前回比\\n`;
     
     cards.forEach((card: any) => {
       const label = card.querySelector(".metric-label")?.textContent;
       const value = card.querySelector(".metric-value")?.textContent;
       const unit = card.querySelector(".metric-unit")?.textContent;
+      const delta = card.querySelector(".delta")?.textContent || "";
       if (label && value) {
-        text += `${label}: ${value}${unit}\\n`;
+        csv += `${label},${value},${unit},${delta}\\n`;
+      }
+    });
+    
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hurdle_${this.currentUser.name}_${Date.now()}.csv`;
+    a.click();
+  }
+  
+  private shareResults(): void {
+    if (!this.currentUser) {
+      alert("選手が選択されていません");
+      return;
+    }
+    
+    const cards = document.querySelectorAll(".metric-item");
+    let text = `ハードル動作解析結果\\n選手: ${this.currentUser.name}\\n\\n`;
+    
+    cards.forEach((card: any) => {
+      const label = card.querySelector(".metric-label")?.textContent;
+      const value = card.querySelector(".metric-value")?.textContent;
+      const unit = card.querySelector(".metric-unit")?.textContent;
+      const delta = card.querySelector(".delta")?.textContent || "";
+      if (label && value) {
+        text += `${label}: ${value}${unit} ${delta}\\n`;
       }
     });
     
     if (navigator.share) {
       navigator.share({
-        title: "ハードル動作解析結果",
+        title: `${this.currentUser.name}のハードル動作解析結果`,
         text: text
       });
     } else {
@@ -467,6 +723,7 @@ class HurdleAnalyzer {
     }
   }
   
+  // 他のメソッドは同じ
   private async handleVideoUpload(file: File): Promise<void> {
     const video = document.getElementById("video") as HTMLVideoElement;
     const videoPreview = document.getElementById("video-preview");
@@ -489,8 +746,8 @@ class HurdleAnalyzer {
           const uiData = this.generateUIData(metrics, this.previousMetrics, qc_flags);
           this.showResults(uiData);
           
+          this.savePreviousResults(metrics);
           this.previousMetrics = metrics;
-          localStorage.setItem("previous_metrics", JSON.stringify(metrics));
         }, 2000);
       };
     }
@@ -561,51 +818,7 @@ class HurdleAnalyzer {
     }
   }
   
-  private saveResults(): void {
-    const metrics = this.getCurrentMetrics();
-    const data = {
-      timestamp: new Date().toISOString(),
-      hurdle_height_cm: parseFloat((document.getElementById("hurdle-height") as HTMLSelectElement).value),
-      metrics,
-      qc_flags: ["OK"]
-    };
-    
-    const dataStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hurdle_${Date.now()}.json`;
-    a.click();
-  }
-  
-  private exportToCSV(): void {
-    const cards = document.querySelectorAll(".metric-item");
-    let csv = `日時,${new Date().toLocaleString()}\\n`;
-    csv += `ハードル高さ,${(document.getElementById("hurdle-height") as HTMLSelectElement).value}cm\\n\\n`;
-    
-    cards.forEach((card: any) => {
-      const label = card.querySelector(".metric-label")?.textContent;
-      const value = card.querySelector(".metric-value")?.textContent;
-      const unit = card.querySelector(".metric-unit")?.textContent;
-      if (label && value) {
-        csv += `${label},${value},${unit}\\n`;
-      }
-    });
-    
-    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-    const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hurdle_${Date.now()}.csv`;
-    a.click();
-  }
-  
   private getCurrentMetrics(): any {
-    // カードから現在の値を取得
     const cards = document.querySelectorAll(".metric-item");
     const metrics: any = {};
     
@@ -613,7 +826,6 @@ class HurdleAnalyzer {
       const label = card.querySelector(".metric-label")?.textContent;
       const value = card.querySelector(".metric-value")?.textContent;
       
-      // ラベルからキーへのマッピング
       const labelToKey: any = {
         "滞空時間": "flight_time",
         "踏切距離": "takeoff_distance",
