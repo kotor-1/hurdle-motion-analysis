@@ -2,35 +2,32 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>HURDLE ANALYZER | プロアスリート向け動作解析</title>
+  <title>ハードル動作解析</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0f0c29">
+  <meta name="theme-color" content="#0d2818">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
     }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/opencv.js@4.8.0/opencv.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div id="app">
     <header>
-      <h1>⚡ HURDLE ANALYZER ⚡</h1>
-      <p class="subtitle">Elite Performance Analysis System</p>
+      <h1>ハードル動作解析</h1>
       <div class="height-selector">
-        <label>🏆 競技レベル選択</label>
+        <label>高さ</label>
         <select id="hurdle-height">
-          <option value="60">60 cm - 中学女子</option>
-          <option value="70">70 cm - 練習用</option>
-          <option value="76.2">76.2 cm - 中学男子</option>
-          <option value="83.8" selected>83.8 cm - 女子標準</option>
-          <option value="91.4">91.4 cm - 高校男子</option>
-          <option value="99.1">99.1 cm - U20男子</option>
-          <option value="106.7">106.7 cm - 一般男子</option>
+          <option value="60">60cm</option>
+          <option value="70">70cm</option>
+          <option value="76.2">76.2cm</option>
+          <option value="83.8" selected>83.8cm</option>
+          <option value="91.4">91.4cm</option>
+          <option value="99.1">99.1cm</option>
+          <option value="106.7">106.7cm</option>
         </select>
       </div>
     </header>
@@ -39,128 +36,119 @@
       <div id="input-section">
         <div class="input-buttons">
           <button id="capture-btn" class="primary-btn">
-            📹 CAMERA CAPTURE
-            <span style="display:block;font-size:0.8rem;font-weight:normal;margin-top:5px;">スマホで撮影</span>
+            <span>📹</span>
+            <span>撮影</span>
           </button>
           <button id="upload-btn" class="primary-btn">
-            📁 VIDEO UPLOAD
-            <span style="display:block;font-size:0.8rem;font-weight:normal;margin-top:5px;">動画を選択</span>
+            <span>📁</span>
+            <span>選択</span>
           </button>
           <button id="demo-btn" class="secondary-btn">
-            🔥 DEMO ANALYSIS
-            <span style="display:block;font-size:0.8rem;font-weight:normal;margin-top:5px;">デモ実行</span>
+            <span>▶️</span>
+            <span>デモ</span>
           </button>
         </div>
         <input type="file" id="file-input" accept="video/*" style="display:none">
       </div>
       
       <div id="video-preview" style="display:none">
-        <video id="video" controls width="100%"></video>
+        <video id="video" controls></video>
       </div>
       
       <div id="progress-section" style="display:none">
-        <h3>🔥 ANALYZING YOUR PERFORMANCE...</h3>
+        <h3>解析中...</h3>
         <div class="progress-bar">
           <div class="progress-fill" id="progress-fill"></div>
         </div>
         <div class="progress-info">
           <span id="progress-percent">0%</span>
-          <span id="eta">計算中...</span>
+          <span id="eta">計算中</span>
         </div>
-        <div class="spinner"></div>
       </div>
       
-      <div id="hint-banner" style="display:none"></div>
-      
       <div id="results-section" style="display:none">
-        <h2>🏆 PERFORMANCE ANALYSIS 🏆</h2>
+        <h2>測定結果</h2>
         
-        <div class="performance-badge">
-          <span id="performance-level" class="badge excellent">EXCELLENT</span>
-        </div>
-        
-        <div class="metrics-grid">
-          <div class="metric-card">
+        <div class="metrics-container">
+          <div class="metric-row">
             <div class="metric-icon">⏱️</div>
-            <div class="metric-label">Flight Time</div>
-            <div class="metric-value" id="flight-time">--</div>
-            <div class="metric-unit">秒</div>
-            <div class="metric-comparison">
-              世界記録: <span class="comparison-value">0.31秒</span>
+            <div class="metric-info">
+              <div class="metric-label">飛行時間</div>
+            </div>
+            <div class="metric-value-wrapper">
+              <span class="metric-value" id="flight-time">--</span>
+              <span class="metric-unit">秒</span>
             </div>
           </div>
           
-          <div class="metric-card">
-            <div class="metric-icon">🚀</div>
-            <div class="metric-label">Takeoff Distance</div>
-            <div class="metric-value" id="takeoff-distance">--</div>
-            <div class="metric-unit">メートル</div>
-            <div class="metric-comparison">
-              理想値: <span class="comparison-value">2.0-2.1m</span>
+          <div class="metric-row">
+            <div class="metric-icon">📏</div>
+            <div class="metric-info">
+              <div class="metric-label">踏切距離</div>
+            </div>
+            <div class="metric-value-wrapper">
+              <span class="metric-value" id="takeoff-distance">--</span>
+              <span class="metric-unit">m</span>
             </div>
           </div>
           
-          <div class="metric-card">
-            <div class="metric-icon">🎯</div>
-            <div class="metric-label">Landing Distance</div>
-            <div class="metric-value" id="landing-distance">--</div>
-            <div class="metric-unit">メートル</div>
-            <div class="metric-comparison">
-              理想値: <span class="comparison-value">1.0-1.2m</span>
+          <div class="metric-row">
+            <div class="metric-icon">📍</div>
+            <div class="metric-info">
+              <div class="metric-label">着地距離</div>
+            </div>
+            <div class="metric-value-wrapper">
+              <span class="metric-value" id="landing-distance">--</span>
+              <span class="metric-unit">m</span>
             </div>
           </div>
         </div>
         
         <div class="sub-metrics">
-          <h3>📊 DETAILED METRICS</h3>
-          <div class="sub-metric-item">
-            <span>⚡ 踏切接地時間</span>
-            <strong id="takeoff-contact">--</strong>
+          <h3>詳細データ</h3>
+          <div class="sub-metric-grid">
+            <div class="sub-metric-item">
+              <span>踏切接地</span>
+              <strong id="takeoff-contact">--</strong>
+            </div>
+            <div class="sub-metric-item">
+              <span>着地接地</span>
+              <strong id="landing-contact">--</strong>
+            </div>
+            <div class="sub-metric-item">
+              <span>最大高</span>
+              <strong id="max-height">--</strong>
+            </div>
+            <div class="sub-metric-item">
+              <span>信頼度</span>
+              <strong id="confidence">--</strong>
+            </div>
           </div>
-          <div class="sub-metric-item">
-            <span>⚡ 着地接地時間</span>
-            <strong id="landing-contact">--</strong>
-          </div>
-          <div class="sub-metric-item">
-            <span>📈 最大クリアランス</span>
-            <strong id="max-height">--</strong>
-          </div>
-          <div class="sub-metric-item">
-            <span>💯 技術スコア</span>
-            <strong id="tech-score">--</strong>
-          </div>
-        </div>
-        
-        <div class="chart-container" id="chart-container" style="display:none">
-          <h3>📈 PERFORMANCE CHART</h3>
-          <canvas id="performance-chart"></canvas>
-        </div>
-        
-        <div id="analysis-comment" style="background: rgba(74, 144, 226, 0.1); padding: 20px; border-radius: 15px; margin: 30px 0; border-left: 4px solid #4a90e2;">
-          <h4 style="color: #4a90e2; margin-bottom: 10px;">💡 コーチングアドバイス</h4>
-          <p id="comment-text" style="line-height: 1.8; color: #e0e0e0;"></p>
         </div>
         
         <div class="action-buttons">
-          <button id="save-btn" class="save-btn">💾 SAVE</button>
-          <button id="retry-btn" class="retry-btn">🔄 RETRY</button>
-          <button id="export-btn" class="export-btn">📤 EXPORT</button>
-          <button id="share-btn" class="share-btn">📱 SHARE</button>
+          <button id="save-btn" class="action-btn">
+            <span class="icon">💾</span>
+            <span>保存</span>
+          </button>
+          <button id="retry-btn" class="action-btn">
+            <span class="icon">🔄</span>
+            <span>再測定</span>
+          </button>
+          <button id="export-btn" class="action-btn">
+            <span class="icon">📤</span>
+            <span>CSV</span>
+          </button>
+          <button id="share-btn" class="action-btn">
+            <span class="icon">📱</span>
+            <span>共有</span>
+          </button>
         </div>
       </div>
-      
-      <canvas id="analysis-canvas" style="display:none"></canvas>
     </main>
     
     <footer>
-      <p>© 2025 HURDLE ANALYZER | Elite Performance System</p>
-      <p style="color: #666;">Powered by AI & Sports Science</p>
-      <div class="social-links">
-        <a href="#">📧</a>
-        <a href="#">🐦</a>
-        <a href="#">📷</a>
-        <a href="#">🎥</a>
-      </div>
+      <p>© 2025 Hurdle Motion Analysis</p>
     </footer>
   </div>
   
