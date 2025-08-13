@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+﻿import { defineConfig } from "vite";
 
 export default defineConfig({
   server: {
@@ -9,10 +9,14 @@ export default defineConfig({
     outDir: "dist",
     assetsDir: "assets",
     minify: true,
+    chunkSizeWarningLimit: 1000, // 警告の閾値を1MBに
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["onnxruntime-web"]
+          // TensorFlowを別チャンクに分離
+          tensorflow: ["@tensorflow/tfjs", "@tensorflow-models/pose-detection"],
+          // その他のベンダーライブラリ
+          vendor: ["chart.js"]
         }
       }
     }
