@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>???????? - ???</title>
+  <script src="https://cdn.jsdelivr.net/npm/opencv.js@4.8.0/opencv.js"></script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>?? ????????????</h1>
+      <div class="height-selector">
+        <label>??????:</label>
+        <select id="hurdle-height">
+          <option value="60">60 cm</option>
+          <option value="70">70 cm</option>
+          <option value="76.2">76.2 cm</option>
+          <option value="83.8" selected>83.8 cm (??)</option>
+          <option value="91.4">91.4 cm</option>
+          <option value="99.1">99.1 cm</option>
+          <option value="106.7">106.7 cm (??)</option>
+        </select>
+      </div>
+    </header>
+    
+    <main>
+      <div id="input-section">
+        <div class="input-buttons">
+          <button id="capture-btn" class="primary-btn">?? ??????</button>
+          <button id="upload-btn" class="primary-btn">?? ?????</button>
+          <button id="demo-btn" class="secondary-btn">?? ????</button>
+        </div>
+        <input type="file" id="file-input" accept="video/*" style="display:none">
+      </div>
+      
+      <div id="video-preview" style="display:none">
+        <video id="video" controls width="100%"></video>
+      </div>
+      
+      <div id="progress-section" style="display:none">
+        <h3>???...</h3>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-info">
+          <span id="progress-percent">0%</span>
+          <span id="eta">????????...</span>
+        </div>
+      </div>
+      
+      <div id="results-section" style="display:none">
+        <h2>?? ????</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon">??</div>
+            <div class="metric-label">????</div>
+            <div class="metric-value" id="flight-time">--</div>
+            <div class="metric-unit">?</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">??</div>
+            <div class="metric-label">????</div>
+            <div class="metric-value" id="takeoff-distance">--</div>
+            <div class="metric-unit">m</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">??</div>
+            <div class="metric-label">????</div>
+            <div class="metric-value" id="landing-distance">--</div>
+            <div class="metric-unit">m</div>
+          </div>
+        </div>
+        
+        <div class="sub-metrics">
+          <h3>?????</h3>
+          <div class="sub-metric-item">
+            <span>??????:</span>
+            <strong id="takeoff-contact">--</strong> ?
+          </div>
+          <div class="sub-metric-item">
+            <span>??????:</span>
+            <strong id="landing-contact">--</strong> ?
+          </div>
+          <div class="sub-metric-item">
+            <span>?????:</span>
+            <strong id="max-height">--</strong> cm
+          </div>
+        </div>
+        
+        <div class="action-buttons">
+          <button id="save-btn" class="save-btn">?? ?????</button>
+          <button id="retry-btn" class="retry-btn">?? ???</button>
+          <button id="export-btn" class="export-btn">?? CSV??????</button>
+        </div>
+      </div>
+      
+      <canvas id="analysis-canvas" style="display:none"></canvas>
+    </main>
+    
+    <footer>
+      <p>? 2025 Hurdle Motion Analysis | Version 1.0</p>
+    </footer>
+  </div>
+  
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
+
