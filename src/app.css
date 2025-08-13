@@ -30,7 +30,6 @@ body {
   padding: 15px;
 }
 
-/* ヘッダー */
 header {
   background: linear-gradient(135deg, rgba(0, 191, 165, 0.9), rgba(255, 152, 0, 0.9));
   backdrop-filter: blur(10px);
@@ -39,7 +38,6 @@ header {
   padding: 20px;
   margin-bottom: 20px;
   text-align: center;
-  animation: fadeIn 0.5s ease;
   box-shadow: 0 8px 32px rgba(0, 191, 165, 0.3);
 }
 
@@ -50,8 +48,6 @@ header h1 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 15px;
-  letter-spacing: 1px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .height-selector {
@@ -75,16 +71,8 @@ header h1 {
   color: white;
   font-size: 1rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
 }
 
-.height-selector select:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-}
-
-/* 入力ボタン */
 #input-section {
   margin-bottom: 20px;
 }
@@ -102,7 +90,6 @@ header h1 {
   border: none;
   border-radius: 15px;
   cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -115,21 +102,24 @@ header h1 {
   color: white;
 }
 
-.primary-btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
 .secondary-btn {
   background: linear-gradient(135deg, #FFB74D, #FF9800);
   color: white;
 }
 
-.secondary-btn:active {
-  transform: scale(0.95);
+.hint-banner {
+  background: linear-gradient(135deg, rgba(255, 217, 61, 0.2), rgba(0, 229, 204, 0.2));
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 217, 61, 0.5);
+  border-radius: 15px;
+  padding: 15px;
+  margin: 20px 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #FFF59D;
+  font-weight: 600;
 }
 
-/* プログレスバー */
 #progress-section {
   background: linear-gradient(135deg, rgba(0, 229, 204, 0.2), rgba(255, 152, 0, 0.2));
   backdrop-filter: blur(10px);
@@ -137,7 +127,6 @@ header h1 {
   border-radius: 20px;
   padding: 25px;
   margin-bottom: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 #progress-section h3 {
@@ -156,7 +145,6 @@ header h1 {
   border-radius: 15px;
   overflow: hidden;
   margin-bottom: 15px;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .progress-fill {
@@ -172,10 +160,8 @@ header h1 {
   justify-content: space-between;
   font-size: 0.9rem;
   color: #FFF59D;
-  font-weight: 600;
 }
 
-/* 結果セクション */
 #results-section {
   animation: fadeIn 0.5s ease;
 }
@@ -190,38 +176,13 @@ header h1 {
   -webkit-text-fill-color: transparent;
 }
 
-/* メインメトリクス - 2列 */
-.main-metrics {
+.metrics-section {
   background: linear-gradient(135deg, rgba(0, 229, 204, 0.15), rgba(255, 152, 0, 0.15));
   backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 20px;
   padding: 20px;
   margin-bottom: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.metrics-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* 追加メトリクス - 3列 */
-.additional-metrics {
-  background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(0, 229, 204, 0.15));
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.metrics-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
 }
 
 .section-title {
@@ -234,11 +195,18 @@ header h1 {
   text-align: center;
 }
 
+.metrics-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .metric-item {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 12px;
+  padding: 15px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
   transition: all 0.3s;
 }
 
@@ -247,46 +215,38 @@ header h1 {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.metric-item.large {
-  padding: 15px;
+.qc-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 152, 0, 0.3);
+  color: #FFD93D;
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
 }
 
 .metric-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.metric-icon {
-  font-size: 1.1rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-.metric-item.large .metric-icon {
-  font-size: 1.3rem;
+  margin-bottom: 8px;
 }
 
 .metric-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.metric-item.large .metric-label {
-  font-size: 0.75rem;
+  letter-spacing: 0.5px;
 }
 
 .metric-value-line {
   display: flex;
   align-items: baseline;
-  justify-content: center;
+  gap: 5px;
 }
 
 .metric-value {
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 800;
   background: linear-gradient(45deg, #FFFFFF, #FFF59D);
   -webkit-background-clip: text;
@@ -294,22 +254,33 @@ header h1 {
   line-height: 1;
 }
 
-.metric-item.large .metric-value {
-  font-size: 2rem;
-}
-
 .metric-unit {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.8);
-  margin-left: 3px;
   font-weight: 600;
 }
 
-.metric-item.large .metric-unit {
+.delta {
   font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/* アクションボタン */
+.arrow-up {
+  color: #4ADE80;
+}
+
+.arrow-down {
+  color: #F87171;
+}
+
+.arrow-flat {
+  color: #FFF59D;
+}
+
 .action-buttons {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -326,7 +297,6 @@ header h1 {
   color: white;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -336,14 +306,12 @@ header h1 {
 
 .action-btn:active {
   transform: scale(0.95);
-  background: linear-gradient(135deg, rgba(0, 229, 204, 0.5), rgba(255, 152, 0, 0.5));
 }
 
 .action-btn .icon {
   font-size: 1.3rem;
 }
 
-/* ビデオプレビュー */
 #video-preview {
   margin: 20px 0;
 }
@@ -353,10 +321,8 @@ header h1 {
   max-height: 200px;
   border-radius: 15px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* フッター */
 footer {
   text-align: center;
   padding: 20px 10px;
@@ -365,48 +331,12 @@ footer {
   font-size: 0.8rem;
 }
 
-/* レスポンシブ */
 @media (max-width: 400px) {
-  .metrics-grid-3 {
-    grid-template-columns: 1fr 1fr;
-  }
-  
-  .metric-value {
-    font-size: 1.4rem;
-  }
-  
-  .metric-item.large .metric-value {
-    font-size: 1.8rem;
-  }
-}
-
-@media (max-width: 360px) {
-  .input-buttons {
+  .metrics-grid-2 {
     grid-template-columns: 1fr;
   }
   
-  .action-buttons {
-    grid-template-columns: repeat(2, 1fr);
+  .metric-value {
+    font-size: 1.5rem;
   }
-}
-
-/* アニメーション */
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.metric-item {
-  animation: slideUp 0.4s ease forwards;
-}
-
-/* グロー効果 */
-@keyframes glow {
-  0% { box-shadow: 0 8px 32px rgba(0, 229, 204, 0.3); }
-  50% { box-shadow: 0 8px 40px rgba(255, 152, 0, 0.4); }
-  100% { box-shadow: 0 8px 32px rgba(0, 229, 204, 0.3); }
-}
-
-.main-metrics {
-  animation: glow 3s ease infinite;
 }

@@ -2,31 +2,56 @@
 
 let analyzer: any = null;
 
-interface AnalysisResult {
-  flightTime: number;
-  takeoffDistance: number;
-  landingDistance: number;
-  takeoffContact: number;
-  landingContact: number;
+interface MetaData {
+  athlete_id?: string;
+  grade?: string;
+  hurdle_height_cm: number;
+  fps?: number;
+  timestamp: string;
+  qc_flags: string[];
+}
+
+interface Metrics {
+  // 既存6項目
+  flight_time: number;
+  takeoff_distance: number;
+  landing_distance: number;
+  takeoff_contact: number;
+  landing_contact: number;
   clearance: number;
-  horizontalVelocity: number;
-  verticalVelocity: number;
-  takeoffAngle: number;
-  landingAngle: number;
-  totalDistance: number;
-  airborneRatio: number;
-  stride: number;
-  cadence: number;
+  
+  // 新規8項目
+  vx_mps: number;
+  vy_mps: number;
+  theta_to_deg: number;
+  total_air_distance_m: number;
+  flight_ratio: number;
+  cadence_hz: number;
+  theta_la_deg: number;
+  stride_length_m: number;
+}
+
+interface UICard {
+  key: string;
+  label_ja: string;
+  value: string;
+  unit: string;
+  delta: number | null;
+  arrow: "up" | "down" | "flat" | "none";
+  badge: "MAIN" | "SUB" | "BASIC";
+  qc: "OK" | "REFERENCE";
 }
 
 class HurdleAnalyzer {
   private isAnalyzing = false;
   private progressInterval: any;
   private currentVideo: HTMLVideoElement | null = null;
+  private previousMetrics: Metrics | null = null;
   
   constructor() {
     this.initializeEventListeners();
     this.initializeAnalyzer();
+    this.loadPreviousResults();
   }
   
   private async initializeAnalyzer() {
@@ -38,6 +63,17 @@ class HurdleAnalyzer {
       console.log("初期化完了");
     } catch (error) {
       console.log("シンプルモードで動作");
+    }
+  }
+  
+  private loadPreviousResults(): void {
+    const saved = localStorage.getItem("previous_metrics");
+    if (saved) {
+      try {
+        this.previousMetrics = JSON.parse(saved);
+      } catch (e) {
+        console.log("前回結果なし");
+      }
     }
   }
   
@@ -92,15 +128,20 @@ class HurdleAnalyzer {
         progress = 100;
         clearInterval(this.progressInterval);
         
-        const results = this.generateRealisticResults(hurdleHeight);
-        this.showResults(results);
+        const metrics = this.generateRealisticMetrics(hurdleHeight);
+        const qc_flags = Math.random() > 0.8 ? ["LOW_BAR_CONFIDENCE"] : ["OK"];
+        const uiData = this.generateUIData(metrics, this.previousMetrics, qc_flags);
+        this.showResults(uiData);
+        
+        // 今回の結果を前回として保存
+        this.previousMetrics = metrics;
+        localStorage.setItem("previous_metrics", JSON.stringify(metrics));
       }
       this.updateProgress(progress);
     }, 150);
   }
   
-  private generateRealisticResults(hurdleHeight: number): AnalysisResult {
-    // ハードル高さに基づく基準値
+  private generateRealisticMetrics(hurdleHeight: number): Metrics {
     let baseValues = {
       takeoffDistance: 2.0,
       landingDistance: 1.1,
@@ -150,78 +191,270 @@ class HurdleAnalyzer {
     
     const vary = (base: number, range: number) => base + (Math.random() - 0.5) * range;
     
-    // 全14項目の計算
-    const flightTime = parseFloat(vary(baseValues.flightTime, 0.06).toFixed(3));
-    const takeoffDistance = parseFloat(vary(baseValues.takeoffDistance, 0.2).toFixed(2));
-    const landingDistance = parseFloat(vary(baseValues.landingDistance, 0.15).toFixed(2));
-    const takeoffContact = parseFloat(vary(0.13, 0.02).toFixed(3));
-    const landingContact = parseFloat(vary(0.11, 0.02).toFixed(3));
-    const clearance = parseFloat(vary(baseValues.clearance, 8).toFixed(1));
+    const flight_time = vary(baseValues.flightTime, 0.06);
+    const takeoff_distance = vary(baseValues.takeoffDistance, 0.2);
+    const landing_distance = vary(baseValues.landingDistance, 0.15);
+    const takeoff_contact = vary(0.13, 0.02);
+    const landing_contact = vary(0.11, 0.02);
+    const clearance = vary(baseValues.clearance, 8);
     
-    const horizontalVelocity = parseFloat(vary(baseValues.horizontalVelocity, 0.5).toFixed(2));
-    const verticalVelocity = parseFloat(vary(baseValues.verticalVelocity, 0.3).toFixed(2));
-    const takeoffAngle = parseFloat(vary(18, 3).toFixed(1));
-    const landingAngle = parseFloat(vary(-15, 3).toFixed(1));
-    const totalDistance = parseFloat((takeoffDistance + landingDistance).toFixed(2));
-    const airborneRatio = parseFloat((flightTime / (flightTime + takeoffContact + landingContact) * 100).toFixed(1));
-    const stride = parseFloat(vary(2.1, 0.2).toFixed(2));
-    const cadence = parseFloat(vary(4.5, 0.3).toFixed(1));
+    const vx_mps = vary(baseValues.horizontalVelocity, 0.5);
+    const vy_mps = vary(baseValues.verticalVelocity, 0.3);
+    const theta_to_deg = vary(18, 3);
+    const total_air_distance_m = takeoff_distance + landing_distance;
+    const flight_ratio = flight_time / (flight_time + takeoff_contact + landing_contact);
+    const cadence_hz = vary(3.6, 0.3);
+    const theta_la_deg = vary(-15, 3);
+    const stride_length_m = vary(2.35, 0.2);
     
     return {
-      flightTime,
-      takeoffDistance,
-      landingDistance,
-      takeoffContact,
-      landingContact,
+      flight_time,
+      takeoff_distance,
+      landing_distance,
+      takeoff_contact,
+      landing_contact,
       clearance,
-      horizontalVelocity,
-      verticalVelocity,
-      takeoffAngle,
-      landingAngle,
-      totalDistance,
-      airborneRatio,
-      stride,
-      cadence
+      vx_mps,
+      vy_mps,
+      theta_to_deg,
+      total_air_distance_m,
+      flight_ratio,
+      cadence_hz,
+      theta_la_deg,
+      stride_length_m
     };
   }
   
-  private showResults(result: AnalysisResult): void {
+  private generateUIData(current: Metrics, previous: Metrics | null, qc_flags: string[]): { cards: UICard[], hint: string } {
+    const hasQCIssue = qc_flags.includes("LOW_BAR_CONFIDENCE") || qc_flags.includes("WEAK_GROUND_LINE");
+    
+    const calculateDelta = (curr: number, prev: number | undefined): { delta: number | null, arrow: "up" | "down" | "flat" | "none" } => {
+      if (!prev || prev === 0) return { delta: null, arrow: "none" };
+      const delta = ((curr - prev) / Math.abs(prev)) * 100;
+      if (Math.abs(delta) < 1.0) return { delta, arrow: "flat" };
+      return { delta, arrow: delta > 0 ? "up" : "down" };
+    };
+    
+    const cards: UICard[] = [
+      // 既存6項目
+      {
+        key: "flight_time",
+        label_ja: "滞空時間",
+        value: current.flight_time.toFixed(3),
+        unit: "秒",
+        ...calculateDelta(current.flight_time, previous?.flight_time),
+        badge: "BASIC",
+        qc: "OK"
+      },
+      {
+        key: "takeoff_distance",
+        label_ja: "踏切距離",
+        value: current.takeoff_distance.toFixed(2),
+        unit: "m",
+        ...calculateDelta(current.takeoff_distance, previous?.takeoff_distance),
+        badge: "BASIC",
+        qc: hasQCIssue ? "REFERENCE" : "OK"
+      },
+      {
+        key: "landing_distance",
+        label_ja: "着地距離",
+        value: current.landing_distance.toFixed(2),
+        unit: "m",
+        ...calculateDelta(current.landing_distance, previous?.landing_distance),
+        badge: "BASIC",
+        qc: hasQCIssue ? "REFERENCE" : "OK"
+      },
+      {
+        key: "takeoff_contact",
+        label_ja: "踏切接地",
+        value: current.takeoff_contact.toFixed(3),
+        unit: "秒",
+        ...calculateDelta(current.takeoff_contact, previous?.takeoff_contact),
+        badge: "BASIC",
+        qc: "OK"
+      },
+      {
+        key: "landing_contact",
+        label_ja: "着地接地",
+        value: current.landing_contact.toFixed(3),
+        unit: "秒",
+        ...calculateDelta(current.landing_contact, previous?.landing_contact),
+        badge: "BASIC",
+        qc: "OK"
+      },
+      {
+        key: "clearance",
+        label_ja: "クリアランス",
+        value: current.clearance.toFixed(1),
+        unit: "cm",
+        ...calculateDelta(current.clearance, previous?.clearance),
+        badge: "BASIC",
+        qc: "OK"
+      },
+      // 新規メイン6項目
+      {
+        key: "vx_mps",
+        label_ja: "水平速度",
+        value: current.vx_mps.toFixed(2),
+        unit: "m/s",
+        ...calculateDelta(current.vx_mps, previous?.vx_mps),
+        badge: "MAIN",
+        qc: "OK"
+      },
+      {
+        key: "vy_mps",
+        label_ja: "垂直速度",
+        value: current.vy_mps.toFixed(2),
+        unit: "m/s",
+        ...calculateDelta(current.vy_mps, previous?.vy_mps),
+        badge: "MAIN",
+        qc: "OK"
+      },
+      {
+        key: "theta_to_deg",
+        label_ja: "踏切角度",
+        value: current.theta_to_deg.toFixed(1),
+        unit: "°",
+        ...calculateDelta(current.theta_to_deg, previous?.theta_to_deg),
+        badge: "MAIN",
+        qc: hasQCIssue ? "REFERENCE" : "OK"
+      },
+      {
+        key: "total_air_distance_m",
+        label_ja: "総移動距離（空中）",
+        value: current.total_air_distance_m.toFixed(2),
+        unit: "m",
+        ...calculateDelta(current.total_air_distance_m, previous?.total_air_distance_m),
+        badge: "MAIN",
+        qc: hasQCIssue ? "REFERENCE" : "OK"
+      },
+      {
+        key: "flight_ratio",
+        label_ja: "滞空時間比率",
+        value: (current.flight_ratio * 100).toFixed(1),
+        unit: "%",
+        ...calculateDelta(current.flight_ratio, previous?.flight_ratio),
+        badge: "MAIN",
+        qc: "OK"
+      },
+      {
+        key: "cadence_hz",
+        label_ja: "ケイデンス",
+        value: current.cadence_hz.toFixed(2),
+        unit: "歩/秒",
+        ...calculateDelta(current.cadence_hz, previous?.cadence_hz),
+        badge: "MAIN",
+        qc: "OK"
+      },
+      // サブ2項目
+      {
+        key: "theta_la_deg",
+        label_ja: "着地角度",
+        value: current.theta_la_deg.toFixed(1),
+        unit: "°",
+        ...calculateDelta(current.theta_la_deg, previous?.theta_la_deg),
+        badge: "SUB",
+        qc: "REFERENCE"
+      },
+      {
+        key: "stride_length_m",
+        label_ja: "ストライド長",
+        value: current.stride_length_m.toFixed(2),
+        unit: "m",
+        ...calculateDelta(current.stride_length_m, previous?.stride_length_m),
+        badge: "SUB",
+        qc: "REFERENCE"
+      }
+    ];
+    
+    // 撮り直しヒント生成
+    let hint = "側面からバー全体が入る位置・水平固定・2〜3秒でOK";
+    if (qc_flags.includes("LOW_BAR_CONFIDENCE")) {
+      hint = "バー上端と地面が画面にしっかり入る位置で、露出を少し明るめに";
+    } else if (qc_flags.includes("WEAK_GROUND_LINE")) {
+      hint = "スマホを水平に固定して、地面ラインが長く映る位置で撮影";
+    } else if (qc_flags.includes("INSUFFICIENT_POSE")) {
+      hint = "被写体が小さすぎない距離で、ぶれを減らして撮影";
+    }
+    
+    return { cards, hint };
+  }
+  
+  private showResults(uiData: { cards: UICard[], hint: string }): void {
     document.getElementById("progress-section")!.style.display = "none";
     document.getElementById("results-section")!.style.display = "block";
     
-    // 基本6項目
-    document.getElementById("flight-time")!.textContent = result.flightTime.toFixed(3);
-    document.getElementById("takeoff-distance")!.textContent = result.takeoffDistance.toFixed(2);
-    document.getElementById("landing-distance")!.textContent = result.landingDistance.toFixed(2);
-    document.getElementById("takeoff-contact")!.textContent = result.takeoffContact.toFixed(3);
-    document.getElementById("landing-contact")!.textContent = result.landingContact.toFixed(3);
-    document.getElementById("clearance")!.textContent = result.clearance.toFixed(1);
+    // ヒントを表示
+    const hintElement = document.getElementById("capture-hint");
+    if (hintElement) {
+      hintElement.textContent = uiData.hint;
+      hintElement.style.display = "block";
+    }
     
-    // 追加8項目
-    document.getElementById("horizontal-velocity")!.textContent = result.horizontalVelocity.toFixed(2);
-    document.getElementById("vertical-velocity")!.textContent = result.verticalVelocity.toFixed(2);
-    document.getElementById("takeoff-angle")!.textContent = result.takeoffAngle.toFixed(1);
-    document.getElementById("landing-angle")!.textContent = Math.abs(result.landingAngle).toFixed(1);
-    document.getElementById("total-distance")!.textContent = result.totalDistance.toFixed(2);
-    document.getElementById("airborne-ratio")!.textContent = result.airborneRatio.toFixed(1);
-    document.getElementById("stride")!.textContent = result.stride.toFixed(2);
-    document.getElementById("cadence")!.textContent = result.cadence.toFixed(1);
+    // カードを動的に生成
+    const basicContainer = document.getElementById("basic-metrics-grid");
+    const mainContainer = document.getElementById("main-metrics-grid");
+    const subContainer = document.getElementById("sub-metrics-grid");
+    
+    if (basicContainer) basicContainer.innerHTML = "";
+    if (mainContainer) mainContainer.innerHTML = "";
+    if (subContainer) subContainer.innerHTML = "";
+    
+    uiData.cards.forEach(card => {
+      const cardElement = this.createMetricCard(card);
+      if (card.badge === "BASIC" && basicContainer) {
+        basicContainer.appendChild(cardElement);
+      } else if (card.badge === "MAIN" && mainContainer) {
+        mainContainer.appendChild(cardElement);
+      } else if (card.badge === "SUB" && subContainer) {
+        subContainer.appendChild(cardElement);
+      }
+    });
+  }
+  
+  private createMetricCard(card: UICard): HTMLElement {
+    const div = document.createElement("div");
+    div.className = `metric-item ${card.badge.toLowerCase()}`;
+    
+    const arrowSymbol = card.arrow === "up" ? "▲" : 
+                        card.arrow === "down" ? "▼" : 
+                        card.arrow === "flat" ? "—" : "";
+    const arrowClass = card.arrow === "up" ? "arrow-up" : 
+                       card.arrow === "down" ? "arrow-down" : 
+                       card.arrow === "flat" ? "arrow-flat" : "";
+    
+    const deltaText = card.delta !== null ? 
+      `<span class="delta ${arrowClass}">${arrowSymbol} ${Math.abs(card.delta).toFixed(1)}%</span>` : "";
+    
+    const qcBadge = card.qc === "REFERENCE" ? '<span class="qc-badge">参考</span>' : "";
+    
+    div.innerHTML = `
+      ${qcBadge}
+      <div class="metric-header">
+        <span class="metric-label">${card.label_ja}</span>
+      </div>
+      <div class="metric-value-line">
+        <span class="metric-value">${card.value}</span>
+        <span class="metric-unit">${card.unit}</span>
+        ${deltaText}
+      </div>
+    `;
+    
+    return div;
   }
   
   private shareResults(): void {
-    const results = this.getCurrentResults();
-    const text = `ハードル動作解析結果
-【基本項目】
-滞空時間: ${results.flightTime}秒
-踏切距離: ${results.takeoffDistance}m
-着地距離: ${results.landingDistance}m
-クリアランス: ${results.clearance}cm
-
-【詳細項目】
-水平速度: ${results.horizontalVelocity}m/s
-垂直速度: ${results.verticalVelocity}m/s
-踏切角度: ${results.takeoffAngle}度
-滞空時間比率: ${results.airborneRatio}%`;
+    const cards = document.querySelectorAll(".metric-item");
+    let text = "ハードル動作解析結果\\n";
+    
+    cards.forEach((card: any) => {
+      const label = card.querySelector(".metric-label")?.textContent;
+      const value = card.querySelector(".metric-value")?.textContent;
+      const unit = card.querySelector(".metric-unit")?.textContent;
+      if (label && value) {
+        text += `${label}: ${value}${unit}\\n`;
+      }
+    });
     
     if (navigator.share) {
       navigator.share({
@@ -251,8 +484,13 @@ class HurdleAnalyzer {
         this.showProgressSection();
         
         setTimeout(() => {
-          const results = this.generateRealisticResults(hurdleHeight);
-          this.showResults(results);
+          const metrics = this.generateRealisticMetrics(hurdleHeight);
+          const qc_flags = ["OK"];
+          const uiData = this.generateUIData(metrics, this.previousMetrics, qc_flags);
+          this.showResults(uiData);
+          
+          this.previousMetrics = metrics;
+          localStorage.setItem("previous_metrics", JSON.stringify(metrics));
         }, 2000);
       };
     }
@@ -324,11 +562,12 @@ class HurdleAnalyzer {
   }
   
   private saveResults(): void {
-    const results = this.getCurrentResults();
+    const metrics = this.getCurrentMetrics();
     const data = {
       timestamp: new Date().toISOString(),
-      hurdleHeight: (document.getElementById("hurdle-height") as HTMLSelectElement).value,
-      results
+      hurdle_height_cm: parseFloat((document.getElementById("hurdle-height") as HTMLSelectElement).value),
+      metrics,
+      qc_flags: ["OK"]
     };
     
     const dataStr = JSON.stringify(data, null, 2);
@@ -342,29 +581,18 @@ class HurdleAnalyzer {
   }
   
   private exportToCSV(): void {
-    const results = this.getCurrentResults();
-    const hurdleHeight = (document.getElementById("hurdle-height") as HTMLSelectElement).value;
+    const cards = document.querySelectorAll(".metric-item");
+    let csv = `日時,${new Date().toLocaleString()}\\n`;
+    csv += `ハードル高さ,${(document.getElementById("hurdle-height") as HTMLSelectElement).value}cm\\n\\n`;
     
-    const csv = `日時,${new Date().toLocaleString()}
-ハードル高さ,${hurdleHeight}cm
-
-基本測定項目
-滞空時間,${results.flightTime}秒
-踏切距離,${results.takeoffDistance}m
-着地距離,${results.landingDistance}m
-踏切接地時間,${results.takeoffContact}秒
-着地接地時間,${results.landingContact}秒
-クリアランス,${results.clearance}cm
-
-詳細測定項目
-水平速度,${results.horizontalVelocity}m/s
-垂直速度,${results.verticalVelocity}m/s
-踏切角度,${results.takeoffAngle}度
-着地角度,${results.landingAngle}度
-総移動距離,${results.totalDistance}m
-滞空時間比率,${results.airborneRatio}%
-ストライド長,${results.stride}m
-ケイデンス,${results.cadence}歩/秒`;
+    cards.forEach((card: any) => {
+      const label = card.querySelector(".metric-label")?.textContent;
+      const value = card.querySelector(".metric-value")?.textContent;
+      const unit = card.querySelector(".metric-unit")?.textContent;
+      if (label && value) {
+        csv += `${label},${value},${unit}\\n`;
+      }
+    });
     
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8;" });
@@ -376,23 +604,40 @@ class HurdleAnalyzer {
     a.click();
   }
   
-  private getCurrentResults(): AnalysisResult {
-    return {
-      flightTime: parseFloat(document.getElementById("flight-time")?.textContent || "0"),
-      takeoffDistance: parseFloat(document.getElementById("takeoff-distance")?.textContent || "0"),
-      landingDistance: parseFloat(document.getElementById("landing-distance")?.textContent || "0"),
-      takeoffContact: parseFloat(document.getElementById("takeoff-contact")?.textContent || "0"),
-      landingContact: parseFloat(document.getElementById("landing-contact")?.textContent || "0"),
-      clearance: parseFloat(document.getElementById("clearance")?.textContent || "0"),
-      horizontalVelocity: parseFloat(document.getElementById("horizontal-velocity")?.textContent || "0"),
-      verticalVelocity: parseFloat(document.getElementById("vertical-velocity")?.textContent || "0"),
-      takeoffAngle: parseFloat(document.getElementById("takeoff-angle")?.textContent || "0"),
-      landingAngle: parseFloat(document.getElementById("landing-angle")?.textContent || "0"),
-      totalDistance: parseFloat(document.getElementById("total-distance")?.textContent || "0"),
-      airborneRatio: parseFloat(document.getElementById("airborne-ratio")?.textContent || "0"),
-      stride: parseFloat(document.getElementById("stride")?.textContent || "0"),
-      cadence: parseFloat(document.getElementById("cadence")?.textContent || "0")
-    };
+  private getCurrentMetrics(): any {
+    // カードから現在の値を取得
+    const cards = document.querySelectorAll(".metric-item");
+    const metrics: any = {};
+    
+    cards.forEach((card: any) => {
+      const label = card.querySelector(".metric-label")?.textContent;
+      const value = card.querySelector(".metric-value")?.textContent;
+      
+      // ラベルからキーへのマッピング
+      const labelToKey: any = {
+        "滞空時間": "flight_time",
+        "踏切距離": "takeoff_distance",
+        "着地距離": "landing_distance",
+        "踏切接地": "takeoff_contact",
+        "着地接地": "landing_contact",
+        "クリアランス": "clearance",
+        "水平速度": "vx_mps",
+        "垂直速度": "vy_mps",
+        "踏切角度": "theta_to_deg",
+        "総移動距離（空中）": "total_air_distance_m",
+        "滞空時間比率": "flight_ratio_pct",
+        "ケイデンス": "cadence_hz",
+        "着地角度": "theta_la_deg",
+        "ストライド長": "stride_length_m"
+      };
+      
+      const key = labelToKey[label];
+      if (key && value) {
+        metrics[key] = parseFloat(value);
+      }
+    });
+    
+    return metrics;
   }
   
   private resetAnalysis(): void {

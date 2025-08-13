@@ -51,6 +51,8 @@
         <input type="file" id="file-input" accept="video/*" style="display:none">
       </div>
       
+      <div id="capture-hint" style="display:none" class="hint-banner"></div>
+      
       <div id="video-preview" style="display:none">
         <video id="video" controls></video>
       </div>
@@ -70,169 +72,21 @@
         <h2>測定結果</h2>
         
         <!-- 基本6項目 -->
-        <div class="main-metrics">
-          <div class="section-title">基本測定項目</div>
-          <div class="metrics-grid-2">
-            <div class="metric-item large">
-              <div class="metric-header">
-                <span class="metric-icon">⏱️</span>
-                <span class="metric-label">滞空時間</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="flight-time">--</span>
-                <span class="metric-unit">秒</span>
-              </div>
-            </div>
-            
-            <div class="metric-item large">
-              <div class="metric-header">
-                <span class="metric-icon">📏</span>
-                <span class="metric-label">踏切距離</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="takeoff-distance">--</span>
-                <span class="metric-unit">m</span>
-              </div>
-            </div>
-            
-            <div class="metric-item large">
-              <div class="metric-header">
-                <span class="metric-icon">📍</span>
-                <span class="metric-label">着地距離</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="landing-distance">--</span>
-                <span class="metric-unit">m</span>
-              </div>
-            </div>
-            
-            <div class="metric-item large">
-              <div class="metric-header">
-                <span class="metric-icon">⚡</span>
-                <span class="metric-label">踏切接地</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="takeoff-contact">--</span>
-                <span class="metric-unit">秒</span>
-              </div>
-            </div>
-            
-            <div class="metric-item large">
-              <div class="metric-header">
-                <span class="metric-icon">🎯</span>
-                <span class="metric-label">着地接地</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="landing-contact">--</span>
-                <span class="metric-unit">秒</span>
-              </div>
-            </div>
-            
-            <div class="metric-item large">
-              <div class="metric-header">
-                <span class="metric-icon">📊</span>
-                <span class="metric-label">クリアランス</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="clearance">--</span>
-                <span class="metric-unit">cm</span>
-              </div>
-            </div>
-          </div>
+        <div class="metrics-section">
+          <div class="section-title">基本測定</div>
+          <div class="metrics-grid-2" id="basic-metrics-grid"></div>
         </div>
         
-        <!-- 追加8項目 -->
-        <div class="additional-metrics">
-          <div class="section-title">詳細測定項目</div>
-          <div class="metrics-grid-3">
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">🏃</span>
-                <span class="metric-label">水平速度</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="horizontal-velocity">--</span>
-                <span class="metric-unit">m/s</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">⬆️</span>
-                <span class="metric-label">垂直速度</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="vertical-velocity">--</span>
-                <span class="metric-unit">m/s</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">📐</span>
-                <span class="metric-label">踏切角度</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="takeoff-angle">--</span>
-                <span class="metric-unit">度</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">📐</span>
-                <span class="metric-label">着地角度</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="landing-angle">--</span>
-                <span class="metric-unit">度</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">📏</span>
-                <span class="metric-label">総移動距離</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="total-distance">--</span>
-                <span class="metric-unit">m</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">⏱️</span>
-                <span class="metric-label">滞空比率</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="airborne-ratio">--</span>
-                <span class="metric-unit">%</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">👣</span>
-                <span class="metric-label">ストライド</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="stride">--</span>
-                <span class="metric-unit">m</span>
-              </div>
-            </div>
-            
-            <div class="metric-item">
-              <div class="metric-header">
-                <span class="metric-icon">🎵</span>
-                <span class="metric-label">ケイデンス</span>
-              </div>
-              <div class="metric-value-line">
-                <span class="metric-value" id="cadence">--</span>
-                <span class="metric-unit">歩/秒</span>
-              </div>
-            </div>
-          </div>
+        <!-- メイン6項目 -->
+        <div class="metrics-section">
+          <div class="section-title">詳細解析</div>
+          <div class="metrics-grid-2" id="main-metrics-grid"></div>
+        </div>
+        
+        <!-- サブ2項目 -->
+        <div class="metrics-section">
+          <div class="section-title">参考値</div>
+          <div class="metrics-grid-2" id="sub-metrics-grid"></div>
         </div>
         
         <div class="action-buttons">
