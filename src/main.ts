@@ -1,6 +1,5 @@
 ﻿import "./app.css";
 
-// 動的インポートでアナライザーを遅延読み込み
 let analyzer: any = null;
 
 interface AnalysisResult {
@@ -25,8 +24,6 @@ class HurdleAnalyzer {
   
   private async initializeAnalyzer() {
     console.log("🚀 アプリを初期化中...");
-    
-    // 必要になったときだけアナライザーを読み込む
     try {
       const module = await import("./core/analyzer");
       analyzer = module.analyzer;
@@ -38,12 +35,10 @@ class HurdleAnalyzer {
   }
   
   private initializeEventListeners(): void {
-    // デモボタン
     document.getElementById("demo-btn")?.addEventListener("click", () => {
       this.runDemoAnalysis();
     });
     
-    // ファイルアップロード
     document.getElementById("upload-btn")?.addEventListener("click", () => {
       document.getElementById("file-input")?.click();
     });
@@ -55,29 +50,29 @@ class HurdleAnalyzer {
       }
     });
     
-    // カメラ撮影
     document.getElementById("capture-btn")?.addEventListener("click", () => {
       this.startCameraCapture();
     });
     
-    // 結果保存
     document.getElementById("save-btn")?.addEventListener("click", () => {
       this.saveResults();
     });
     
-    // 再解析
     document.getElementById("retry-btn")?.addEventListener("click", () => {
       this.resetAnalysis();
     });
     
-    // CSVエクスポート
     document.getElementById("export-btn")?.addEventListener("click", () => {
       this.exportToCSV();
+    });
+    
+    document.getElementById("share-btn")?.addEventListener("click", () => {
+      this.shareResults();
     });
   }
   
   private async runDemoAnalysis(): Promise<void> {
-    console.log("📊 デモ解析を実行中...");
+    console.log("🔥 デモ解析を実行中...");
     
     const hurdleHeight = parseFloat(
       (document.getElementById("hurdle-height") as HTMLSelectElement).value
@@ -87,7 +82,7 @@ class HurdleAnalyzer {
     
     let progress = 0;
     this.progressInterval = setInterval(() => {
-      progress += Math.random() * 20;
+      progress += Math.random() * 15 + 5;
       if (progress >= 100) {
         progress = 100;
         clearInterval(this.progressInterval);
@@ -96,11 +91,10 @@ class HurdleAnalyzer {
         this.showResults(results);
       }
       this.updateProgress(progress);
-    }, 300);
+    }, 200);
   }
   
   private generateRealisticResults(hurdleHeight: number): AnalysisResult {
-    // 現実的な値を生成
     let baseValues = {
       takeoffDistance: 2.0,
       landingDistance: 1.1,
@@ -151,6 +145,142 @@ class HurdleAnalyzer {
     };
   }
   
+  private evaluatePerformance(result: AnalysisResult): { level: string, score: number, comment: string } {
+    let score = 100;
+    const comments: string[] = [];
+    
+    // 飛行時間評価
+    if (result.flightTime < 0.30) {
+      score += 10;
+      comments.push("⚡ 驚異的な飛行時間！世界トップレベルです。");
+    } else if (result.flightTime < 0.35) {
+      score += 5;
+      comments.push("✅ 優れた飛行時間です。");
+    } else if (result.flightTime > 0.40) {
+      score -= 15;
+      comments.push("⚠️ 滞空時間が長すぎます。より低く速いクリアを目指しましょう。");
+    }
+    
+    // 踏切距離評価
+    if (result.takeoffDistance >= 1.9 && result.takeoffDistance <= 2.1) {
+      score += 10;
+      comments.push("🎯 完璧な踏切位置です！");
+    } else if (result.takeoffDistance < 1.7) {
+      score -= 20;
+      comments.push("⚠️ 踏切が近すぎます。ハードルにぶつかるリスクがあります。");
+    } else if (result.takeoffDistance > 2.3) {
+      score -= 15;
+      comments.push("⚠️ 踏切が遠すぎます。エネルギーロスが大きいです。");
+    }
+    
+    // 着地距離評価
+    if (result.landingDistance >= 1.0 && result.landingDistance <= 1.2) {
+      score += 10;
+      comments.push("💯 理想的な着地位置です！");
+    } else if (result.landingDistance < 0.9) {
+      score -= 20;
+      comments.push("⚠️ 着地が近すぎて危険です。");
+    } else if (result.landingDistance > 1.4) {
+      score -= 15;
+      comments.push("⚠️ 着地が遠すぎます。次のハードルへの準備が遅れます。");
+    }
+    
+    // 接地時間評価
+    if (result.takeoffContact < 0.12 && result.landingContact < 0.11) {
+      score += 5;
+      comments.push("🚀 素晴らしい接地時間！スピードが維持されています。");
+    }
+    
+    let level = "NEEDS WORK";
+    if (score >= 110) {
+      level = "WORLD CLASS";
+    } else if (score >= 95) {
+      level = "EXCELLENT";
+    } else if (score >= 80) {
+      level = "VERY GOOD";
+    } else if (score >= 65) {
+      level = "GOOD";
+    }
+    
+    const finalComment = comments.join(" ") || "継続的な練習で改善しましょう！";
+    
+    return { level, score: Math.min(100, score), comment: finalComment };
+  }
+  
+  private showResults(result: AnalysisResult): void {
+    document.getElementById("progress-section")!.style.display = "none";
+    document.getElementById("results-section")!.style.display = "block";
+    
+    // 数値を表示
+    document.getElementById("flight-time")!.textContent = result.flightTime.toFixed(3);
+    document.getElementById("takeoff-distance")!.textContent = result.takeoffDistance.toFixed(2);
+    document.getElementById("landing-distance")!.textContent = result.landingDistance.toFixed(2);
+    document.getElementById("takeoff-contact")!.textContent = result.takeoffContact.toFixed(3) + "秒";
+    document.getElementById("landing-contact")!.textContent = result.landingContact.toFixed(3) + "秒";
+    document.getElementById("max-height")!.textContent = result.maxHeight.toFixed(1) + "cm";
+    
+    // パフォーマンス評価
+    const evaluation = this.evaluatePerformance(result);
+    document.getElementById("tech-score")!.textContent = evaluation.score + "点";
+    
+    const badge = document.getElementById("performance-level")!;
+    badge.textContent = evaluation.level;
+    badge.className = "badge " + (
+      evaluation.level === "WORLD CLASS" ? "excellent" :
+      evaluation.level === "EXCELLENT" ? "excellent" :
+      evaluation.level === "VERY GOOD" ? "good" :
+      evaluation.level === "GOOD" ? "good" : "average"
+    );
+    
+    // コメント表示
+    document.getElementById("comment-text")!.textContent = evaluation.comment;
+    
+    // アニメーション
+    document.querySelectorAll(".metric-card").forEach((card, index) => {
+      setTimeout(() => {
+        (card as HTMLElement).style.animation = "fadeIn 0.5s ease forwards";
+      }, index * 100);
+    });
+    
+    // 成功音を鳴らす（オプション）
+    this.playSuccessSound();
+  }
+  
+  private playSuccessSound(): void {
+    // 成功音のビープ音を生成
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = "sine";
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+  }
+  
+  private shareResults(): void {
+    const results = this.getCurrentResults();
+    const text = `🏃 ハードル動作解析結果\n⏱️ 飛行時間: ${results.flightTime}秒\n📏 踏切距離: ${results.takeoffDistance}m\n🎯 着地距離: ${results.landingDistance}m\n\n#HurdleAnalyzer #陸上競技 #ハードル`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: "ハードル動作解析結果",
+        text: text,
+        url: "https://hurdle-motion-analysis.netlify.app"
+      });
+    } else {
+      navigator.clipboard.writeText(text);
+      alert("📋 結果をクリップボードにコピーしました！");
+    }
+  }
+  
   private async handleVideoUpload(file: File): Promise<void> {
     console.log(`📁 動画を解析中: ${file.name}`);
     
@@ -176,7 +306,6 @@ class HurdleAnalyzer {
             const results = await analyzer.analyzeVideo(video, hurdleHeight);
             this.showResults(results);
           } else {
-            // アナライザーがない場合はシミュレーション
             const results = this.generateRealisticResults(hurdleHeight);
             this.showResults(results);
           }
@@ -254,31 +383,9 @@ class HurdleAnalyzer {
     if (eta) {
       const remaining = Math.ceil((100 - percent) / 25);
       eta.textContent = percent >= 100 
-        ? "解析完了！" 
-        : `残り約 ${remaining} 秒`;
+        ? "🔥 解析完了！" 
+        : `⏱️ 残り約 ${remaining} 秒`;
     }
-  }
-  
-  private showResults(result: AnalysisResult): void {
-    document.getElementById("progress-section")!.style.display = "none";
-    document.getElementById("results-section")!.style.display = "block";
-    
-    document.getElementById("flight-time")!.textContent = result.flightTime.toFixed(3);
-    document.getElementById("takeoff-distance")!.textContent = result.takeoffDistance.toFixed(2);
-    document.getElementById("landing-distance")!.textContent = result.landingDistance.toFixed(2);
-    document.getElementById("takeoff-contact")!.textContent = result.takeoffContact.toFixed(3);
-    document.getElementById("landing-contact")!.textContent = result.landingContact.toFixed(3);
-    document.getElementById("max-height")!.textContent = result.maxHeight.toFixed(1);
-    
-    if (result.confidence) {
-      console.log(`解析信頼度: ${(result.confidence * 100).toFixed(0)}%`);
-    }
-    
-    document.querySelectorAll(".metric-card").forEach((card, index) => {
-      setTimeout(() => {
-        (card as HTMLElement).style.animation = "pulse 0.5s";
-      }, index * 100);
-    });
   }
   
   private saveResults(): void {
@@ -336,9 +443,9 @@ class HurdleAnalyzer {
       flightTime: parseFloat(document.getElementById("flight-time")?.textContent || "0"),
       takeoffDistance: parseFloat(document.getElementById("takeoff-distance")?.textContent || "0"),
       landingDistance: parseFloat(document.getElementById("landing-distance")?.textContent || "0"),
-      takeoffContact: parseFloat(document.getElementById("takeoff-contact")?.textContent || "0"),
-      landingContact: parseFloat(document.getElementById("landing-contact")?.textContent || "0"),
-      maxHeight: parseFloat(document.getElementById("max-height")?.textContent || "0")
+      takeoffContact: parseFloat((document.getElementById("takeoff-contact")?.textContent || "0").replace("秒", "")),
+      landingContact: parseFloat((document.getElementById("landing-contact")?.textContent || "0").replace("秒", "")),
+      maxHeight: parseFloat((document.getElementById("max-height")?.textContent || "0").replace("cm", ""))
     };
   }
   
