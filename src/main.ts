@@ -3,22 +3,20 @@
 let analyzer: any = null;
 
 interface AnalysisResult {
-  flightTime: number;        // 滞空時間
-  takeoffDistance: number;    // 踏切距離
-  landingDistance: number;    // 着地距離
-  takeoffContact: number;     // 踏切接地時間
-  landingContact: number;     // 着地接地時間
-  clearance: number;          // クリアランス（ハードル上の余裕高）
-  
-  // 追加可能な測定項目
-  horizontalVelocity?: number;   // 水平速度
-  verticalVelocity?: number;     // 垂直速度
-  takeoffAngle?: number;         // 踏切角度
-  landingAngle?: number;         // 着地角度
-  totalDistance?: number;        // 総移動距離
-  airborneRatio?: number;        // 滞空時間比率
-  stride?: number;                // ストライド長
-  cadence?: number;               // ケイデンス
+  flightTime: number;
+  takeoffDistance: number;
+  landingDistance: number;
+  takeoffContact: number;
+  landingContact: number;
+  clearance: number;
+  horizontalVelocity: number;
+  verticalVelocity: number;
+  takeoffAngle: number;
+  landingAngle: number;
+  totalDistance: number;
+  airborneRatio: number;
+  stride: number;
+  cadence: number;
 }
 
 class HurdleAnalyzer {
@@ -96,9 +94,6 @@ class HurdleAnalyzer {
         
         const results = this.generateRealisticResults(hurdleHeight);
         this.showResults(results);
-        
-        // 追加測定項目をコンソールに表示
-        this.logAdditionalMetrics(results);
       }
       this.updateProgress(progress);
     }, 150);
@@ -155,7 +150,7 @@ class HurdleAnalyzer {
     
     const vary = (base: number, range: number) => base + (Math.random() - 0.5) * range;
     
-    // 基本6項目
+    // 全14項目の計算
     const flightTime = parseFloat(vary(baseValues.flightTime, 0.06).toFixed(3));
     const takeoffDistance = parseFloat(vary(baseValues.takeoffDistance, 0.2).toFixed(2));
     const landingDistance = parseFloat(vary(baseValues.landingDistance, 0.15).toFixed(2));
@@ -163,12 +158,11 @@ class HurdleAnalyzer {
     const landingContact = parseFloat(vary(0.11, 0.02).toFixed(3));
     const clearance = parseFloat(vary(baseValues.clearance, 8).toFixed(1));
     
-    // 追加測定項目の計算
     const horizontalVelocity = parseFloat(vary(baseValues.horizontalVelocity, 0.5).toFixed(2));
     const verticalVelocity = parseFloat(vary(baseValues.verticalVelocity, 0.3).toFixed(2));
     const takeoffAngle = parseFloat(vary(18, 3).toFixed(1));
     const landingAngle = parseFloat(vary(-15, 3).toFixed(1));
-    const totalDistance = takeoffDistance + landingDistance;
+    const totalDistance = parseFloat((takeoffDistance + landingDistance).toFixed(2));
     const airborneRatio = parseFloat((flightTime / (flightTime + takeoffContact + landingContact) * 100).toFixed(1));
     const stride = parseFloat(vary(2.1, 0.2).toFixed(2));
     const cadence = parseFloat(vary(4.5, 0.3).toFixed(1));
@@ -195,34 +189,39 @@ class HurdleAnalyzer {
     document.getElementById("progress-section")!.style.display = "none";
     document.getElementById("results-section")!.style.display = "block";
     
-    // 基本6項目を表示
+    // 基本6項目
     document.getElementById("flight-time")!.textContent = result.flightTime.toFixed(3);
     document.getElementById("takeoff-distance")!.textContent = result.takeoffDistance.toFixed(2);
     document.getElementById("landing-distance")!.textContent = result.landingDistance.toFixed(2);
     document.getElementById("takeoff-contact")!.textContent = result.takeoffContact.toFixed(3);
     document.getElementById("landing-contact")!.textContent = result.landingContact.toFixed(3);
     document.getElementById("clearance")!.textContent = result.clearance.toFixed(1);
-  }
-  
-  private logAdditionalMetrics(result: AnalysisResult): void {
-    console.log("📊 追加測定可能項目:");
-    console.log("├─ 水平速度:", result.horizontalVelocity, "m/s");
-    console.log("├─ 垂直速度:", result.verticalVelocity, "m/s");
-    console.log("├─ 踏切角度:", result.takeoffAngle, "度");
-    console.log("├─ 着地角度:", result.landingAngle, "度");
-    console.log("├─ 総移動距離:", result.totalDistance?.toFixed(2), "m");
-    console.log("├─ 滞空時間比率:", result.airborneRatio, "%");
-    console.log("├─ ストライド長:", result.stride, "m");
-    console.log("└─ ケイデンス:", result.cadence, "歩/秒");
+    
+    // 追加8項目
+    document.getElementById("horizontal-velocity")!.textContent = result.horizontalVelocity.toFixed(2);
+    document.getElementById("vertical-velocity")!.textContent = result.verticalVelocity.toFixed(2);
+    document.getElementById("takeoff-angle")!.textContent = result.takeoffAngle.toFixed(1);
+    document.getElementById("landing-angle")!.textContent = Math.abs(result.landingAngle).toFixed(1);
+    document.getElementById("total-distance")!.textContent = result.totalDistance.toFixed(2);
+    document.getElementById("airborne-ratio")!.textContent = result.airborneRatio.toFixed(1);
+    document.getElementById("stride")!.textContent = result.stride.toFixed(2);
+    document.getElementById("cadence")!.textContent = result.cadence.toFixed(1);
   }
   
   private shareResults(): void {
     const results = this.getCurrentResults();
     const text = `ハードル動作解析結果
+【基本項目】
 滞空時間: ${results.flightTime}秒
 踏切距離: ${results.takeoffDistance}m
 着地距離: ${results.landingDistance}m
-クリアランス: ${results.clearance}cm`;
+クリアランス: ${results.clearance}cm
+
+【詳細項目】
+水平速度: ${results.horizontalVelocity}m/s
+垂直速度: ${results.verticalVelocity}m/s
+踏切角度: ${results.takeoffAngle}度
+滞空時間比率: ${results.airborneRatio}%`;
     
     if (navigator.share) {
       navigator.share({
@@ -254,7 +253,6 @@ class HurdleAnalyzer {
         setTimeout(() => {
           const results = this.generateRealisticResults(hurdleHeight);
           this.showResults(results);
-          this.logAdditionalMetrics(results);
         }, 2000);
       };
     }
@@ -327,24 +325,10 @@ class HurdleAnalyzer {
   
   private saveResults(): void {
     const results = this.getCurrentResults();
-    const allResults = this.generateRealisticResults(
-      parseFloat((document.getElementById("hurdle-height") as HTMLSelectElement).value)
-    );
-    
     const data = {
       timestamp: new Date().toISOString(),
       hurdleHeight: (document.getElementById("hurdle-height") as HTMLSelectElement).value,
-      basicMetrics: results,
-      additionalMetrics: {
-        horizontalVelocity: allResults.horizontalVelocity,
-        verticalVelocity: allResults.verticalVelocity,
-        takeoffAngle: allResults.takeoffAngle,
-        landingAngle: allResults.landingAngle,
-        totalDistance: allResults.totalDistance,
-        airborneRatio: allResults.airborneRatio,
-        stride: allResults.stride,
-        cadence: allResults.cadence
-      }
+      results
     };
     
     const dataStr = JSON.stringify(data, null, 2);
@@ -363,12 +347,24 @@ class HurdleAnalyzer {
     
     const csv = `日時,${new Date().toLocaleString()}
 ハードル高さ,${hurdleHeight}cm
+
+基本測定項目
 滞空時間,${results.flightTime}秒
 踏切距離,${results.takeoffDistance}m
 着地距離,${results.landingDistance}m
 踏切接地時間,${results.takeoffContact}秒
 着地接地時間,${results.landingContact}秒
-クリアランス,${results.clearance}cm`;
+クリアランス,${results.clearance}cm
+
+詳細測定項目
+水平速度,${results.horizontalVelocity}m/s
+垂直速度,${results.verticalVelocity}m/s
+踏切角度,${results.takeoffAngle}度
+着地角度,${results.landingAngle}度
+総移動距離,${results.totalDistance}m
+滞空時間比率,${results.airborneRatio}%
+ストライド長,${results.stride}m
+ケイデンス,${results.cadence}歩/秒`;
     
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8;" });
@@ -380,14 +376,22 @@ class HurdleAnalyzer {
     a.click();
   }
   
-  private getCurrentResults(): any {
+  private getCurrentResults(): AnalysisResult {
     return {
       flightTime: parseFloat(document.getElementById("flight-time")?.textContent || "0"),
       takeoffDistance: parseFloat(document.getElementById("takeoff-distance")?.textContent || "0"),
       landingDistance: parseFloat(document.getElementById("landing-distance")?.textContent || "0"),
       takeoffContact: parseFloat(document.getElementById("takeoff-contact")?.textContent || "0"),
       landingContact: parseFloat(document.getElementById("landing-contact")?.textContent || "0"),
-      clearance: parseFloat(document.getElementById("clearance")?.textContent || "0")
+      clearance: parseFloat(document.getElementById("clearance")?.textContent || "0"),
+      horizontalVelocity: parseFloat(document.getElementById("horizontal-velocity")?.textContent || "0"),
+      verticalVelocity: parseFloat(document.getElementById("vertical-velocity")?.textContent || "0"),
+      takeoffAngle: parseFloat(document.getElementById("takeoff-angle")?.textContent || "0"),
+      landingAngle: parseFloat(document.getElementById("landing-angle")?.textContent || "0"),
+      totalDistance: parseFloat(document.getElementById("total-distance")?.textContent || "0"),
+      airborneRatio: parseFloat(document.getElementById("airborne-ratio")?.textContent || "0"),
+      stride: parseFloat(document.getElementById("stride")?.textContent || "0"),
+      cadence: parseFloat(document.getElementById("cadence")?.textContent || "0")
     };
   }
   
