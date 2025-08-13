@@ -2,22 +2,6 @@
 
 let analyzer: any = null;
 
-interface UserProfile {
-  id: string;
-  name: string;
-  grade?: string;
-  lastUsed: string;
-}
-
-interface MetaData {
-  athlete_id: string;
-  grade?: string;
-  hurdle_height_cm: number;
-  fps?: number;
-  timestamp: string;
-  qc_flags: string[];
-}
-
 interface Metrics {
   // 既存6項目
   flight_time: number;
@@ -27,15 +11,13 @@ interface Metrics {
   landing_contact: number;
   clearance: number;
   
-  // 新規8項目
+  // 新規6項目
   vx_mps: number;
   vy_mps: number;
   theta_to_deg: number;
   total_air_distance_m: number;
   flight_ratio: number;
   cadence_hz: number;
-  theta_la_deg: number;
-  stride_length_m: number;
 }
 
 interface UICard {
@@ -43,23 +25,18 @@ interface UICard {
   label_ja: string;
   value: string;
   unit: string;
-  delta: number | null;
-  arrow: "up" | "down" | "flat" | "none";
-  badge: "MAIN" | "SUB" | "BASIC";
-  qc: "OK" | "REFERENCE";
+  badge: "MAIN" | "BASIC";
+  description: string;
 }
 
 class HurdleAnalyzer {
   private isAnalyzing = false;
   private progressInterval: any;
   private currentVideo: HTMLVideoElement | null = null;
-  private currentUser: UserProfile | null = null;
-  private previousMetrics: Metrics | null = null;
   
   constructor() {
     this.initializeEventListeners();
     this.initializeAnalyzer();
-    this.initializeUserSelector();
   }
   
   private async initializeAnalyzer() {
@@ -74,201 +51,12 @@ class HurdleAnalyzer {
     }
   }
   
-  private initializeUserSelector(): void {
-    // ユーザー選択UIを作成
-    const header = document.querySelector("header");
-    if (!header) return;
-    
-    const userSelector = document.createElement("div");
-    userSelector.className = "user-selector";
-    userSelector.innerHTML = `
-      <label>選手</label>
-      <select id="user-select">
-        <option value="">選手を選択</option>
-      </select>
-      <button id="add-user-btn" class="user-btn">➕</button>
-    `;
-    
-    header.appendChild(userSelector);
-    
-    this.loadUsers();
-    
-    // イベントリスナー
-    document.getElementById("user-select")?.addEventListener("change", (e) => {
-      const userId = (e.target as HTMLSelectElement).value;
-      this.selectUser(userId);
-    });
-    
-    document.getElementById("add-user-btn")?.addEventListener("click", () => {
-      this.showAddUserDialog();
-    });
-  }
-  
-  private loadUsers(): void {
-    const users = this.getAllUsers();
-    const select = document.getElementById("user-select") as HTMLSelectElement;
-    if (!select) return;
-    
-    // 既存のオプションをクリア（最初の「選手を選択」以外）
-    while (select.options.length > 1) {
-      select.remove(1);
-    }
-    
-    // ユーザーを追加
-    users.forEach(user => {
-      const option = document.createElement("option");
-      option.value = user.id;
-      option.textContent = `${user.name} (${user.grade || "未設定"})`;
-      select.appendChild(option);
-    });
-    
-    // 最後に使用したユーザーを選択
-    const lastUserId = localStorage.getItem("last_user_id");
-    if (lastUserId) {
-      select.value = lastUserId;
-      this.selectUser(lastUserId);
-    }
-  }
-  
-  private getAllUsers(): UserProfile[] {
-    const usersJson = localStorage.getItem("users");
-    if (!usersJson) return [];
-    
-    try {
-      return JSON.parse(usersJson);
-    } catch {
-      return [];
-    }
-  }
-  
-  private saveUser(user: UserProfile): void {
-    const users = this.getAllUsers();
-    const existingIndex = users.findIndex(u => u.id === user.id);
-    
-    if (existingIndex >= 0) {
-      users[existingIndex] = user;
-    } else {
-      users.push(user);
-    }
-    
-    localStorage.setItem("users", JSON.stringify(users));
-  }
-  
-  private selectUser(userId: string): void {
-    if (!userId) {
-      this.currentUser = null;
-      this.previousMetrics = null;
-      return;
-    }
-    
-    const users = this.getAllUsers();
-    const user = users.find(u => u.id === userId);
-    
-    if (user) {
-      this.currentUser = user;
-      user.lastUsed = new Date().toISOString();
-      this.saveUser(user);
-      localStorage.setItem("last_user_id", userId);
-      
-      // このユーザーの前回記録を読み込み
-      this.loadPreviousResults();
-      
-      // UIに名前を表示
-      this.updateUserDisplay();
-    }
-  }
-  
-  private showAddUserDialog(): void {
-    const name = prompt("選手名を入力してください：");
-    if (!name) return;
-    
-    const grade = prompt("学年を入力してください（例: 小学生:ES, 中学生:JHS, 高校:HS）：") || "";
-    
-    const user: UserProfile = {
-      id: `user_${Date.now()}`,
-      name: name,
-      grade: grade,
-      lastUsed: new Date().toISOString()
-    };
-    
-    this.saveUser(user);
-    this.loadUsers();
-    
-    // 新しいユーザーを選択
-    const select = document.getElementById("user-select") as HTMLSelectElement;
-    if (select) {
-      select.value = user.id;
-      this.selectUser(user.id);
-    }
-  }
-  
-  private updateUserDisplay(): void {
-    if (!this.currentUser) return;
-    
-    // 現在のユーザーを表示するバナーを追加/更新
-    let banner = document.getElementById("current-user-banner");
-    if (!banner) {
-      banner = document.createElement("div");
-      banner.id = "current-user-banner";
-      banner.className = "user-banner";
-      const main = document.querySelector("main");
-      if (main) {
-        main.insertBefore(banner, main.firstChild);
-      }
-    }
-    
-    banner.innerHTML = `
-      <span class="user-icon">👤</span>
-      <span class="user-name">${this.currentUser.name}</span>
-      <span class="user-grade">${this.currentUser.grade || ""}</span>
-    `;
-  }
-  
-  private loadPreviousResults(): void {
-    if (!this.currentUser) {
-      this.previousMetrics = null;
-      return;
-    }
-    
-    const key = `metrics_${this.currentUser.id}`;
-    const saved = localStorage.getItem(key);
-    
-    if (saved) {
-      try {
-        this.previousMetrics = JSON.parse(saved);
-        console.log(`前回記録を読み込み: ${this.currentUser.name}`);
-      } catch (e) {
-        console.log("前回記録の読み込みエラー");
-        this.previousMetrics = null;
-      }
-    } else {
-      this.previousMetrics = null;
-      console.log(`${this.currentUser.name}の前回記録なし`);
-    }
-  }
-  
-  private savePreviousResults(metrics: Metrics): void {
-    if (!this.currentUser) return;
-    
-    const key = `metrics_${this.currentUser.id}`;
-    localStorage.setItem(key, JSON.stringify(metrics));
-    console.log(`記録を保存: ${this.currentUser.name}`);
-  }
-  
   private initializeEventListeners(): void {
     document.getElementById("demo-btn")?.addEventListener("click", () => {
-      if (!this.currentUser) {
-        alert("先に選手を選択してください");
-        return;
-      }
       this.runDemoAnalysis();
     });
     
     document.getElementById("upload-btn")?.addEventListener("click", () => {
-      if (!this.currentUser) {
-        alert("先に選手を選択してください");
-        return;
-      }
       document.getElementById("file-input")?.click();
     });
     
@@ -280,10 +68,6 @@ class HurdleAnalyzer {
     });
     
     document.getElementById("capture-btn")?.addEventListener("click", () => {
-      if (!this.currentUser) {
-        alert("先に選手を選択してください");
-        return;
-      }
       this.startCameraCapture();
     });
     
@@ -319,20 +103,12 @@ class HurdleAnalyzer {
         clearInterval(this.progressInterval);
         
         const metrics = this.generateRealisticMetrics(hurdleHeight);
-        const qc_flags = Math.random() > 0.8 ? ["LOW_BAR_CONFIDENCE"] : ["OK"];
-        const uiData = this.generateUIData(metrics, this.previousMetrics, qc_flags);
+        const uiData = this.generateUIData(metrics);
         this.showResults(uiData);
-        
-        // このユーザーの前回記録として保存
-        this.savePreviousResults(metrics);
-        this.previousMetrics = metrics;
       }
       this.updateProgress(progress);
     }, 150);
   }
-  
-  // 以下、既存のメソッドは同じ（generateRealisticMetrics, generateUIData, showResults等）
-  // ... 省略 ...
   
   private generateRealisticMetrics(hurdleHeight: number): Metrics {
     let baseValues = {
@@ -397,8 +173,6 @@ class HurdleAnalyzer {
     const total_air_distance_m = takeoff_distance + landing_distance;
     const flight_ratio = flight_time / (flight_time + takeoff_contact + landing_contact);
     const cadence_hz = vary(3.6, 0.3);
-    const theta_la_deg = vary(-15, 3);
-    const stride_length_m = vary(2.35, 0.2);
     
     return {
       flight_time,
@@ -412,22 +186,11 @@ class HurdleAnalyzer {
       theta_to_deg,
       total_air_distance_m,
       flight_ratio,
-      cadence_hz,
-      theta_la_deg,
-      stride_length_m
+      cadence_hz
     };
   }
   
-  private generateUIData(current: Metrics, previous: Metrics | null, qc_flags: string[]): { cards: UICard[], hint: string } {
-    const hasQCIssue = qc_flags.includes("LOW_BAR_CONFIDENCE") || qc_flags.includes("WEAK_GROUND_LINE");
-    
-    const calculateDelta = (curr: number, prev: number | undefined): { delta: number | null, arrow: "up" | "down" | "flat" | "none" } => {
-      if (!prev || prev === 0) return { delta: null, arrow: "none" };
-      const delta = ((curr - prev) / Math.abs(prev)) * 100;
-      if (Math.abs(delta) < 1.0) return { delta, arrow: "flat" };
-      return { delta, arrow: delta > 0 ? "up" : "down" };
-    };
-    
+  private generateUIData(current: Metrics): { cards: UICard[], hint: string } {
     const cards: UICard[] = [
       // 既存6項目
       {
@@ -435,139 +198,101 @@ class HurdleAnalyzer {
         label_ja: "滞空時間",
         value: current.flight_time.toFixed(3),
         unit: "秒",
-        ...calculateDelta(current.flight_time, previous?.flight_time),
         badge: "BASIC",
-        qc: "OK"
+        description: "ハードルを跳び越える際の空中にいる時間"
       },
       {
         key: "takeoff_distance",
         label_ja: "踏切距離",
         value: current.takeoff_distance.toFixed(2),
         unit: "m",
-        ...calculateDelta(current.takeoff_distance, previous?.takeoff_distance),
         badge: "BASIC",
-        qc: hasQCIssue ? "REFERENCE" : "OK"
+        description: "ハードル手前の踏切位置までの距離"
       },
       {
         key: "landing_distance",
         label_ja: "着地距離",
         value: current.landing_distance.toFixed(2),
         unit: "m",
-        ...calculateDelta(current.landing_distance, previous?.landing_distance),
         badge: "BASIC",
-        qc: hasQCIssue ? "REFERENCE" : "OK"
+        description: "ハードルから着地位置までの距離"
       },
       {
         key: "takeoff_contact",
         label_ja: "踏切接地",
         value: current.takeoff_contact.toFixed(3),
         unit: "秒",
-        ...calculateDelta(current.takeoff_contact, previous?.takeoff_contact),
         badge: "BASIC",
-        qc: "OK"
+        description: "踏切時の足が地面に接している時間"
       },
       {
         key: "landing_contact",
         label_ja: "着地接地",
         value: current.landing_contact.toFixed(3),
         unit: "秒",
-        ...calculateDelta(current.landing_contact, previous?.landing_contact),
         badge: "BASIC",
-        qc: "OK"
+        description: "着地時の足が地面に接している時間"
       },
       {
         key: "clearance",
         label_ja: "クリアランス",
         value: current.clearance.toFixed(1),
         unit: "cm",
-        ...calculateDelta(current.clearance, previous?.clearance),
         badge: "BASIC",
-        qc: "OK"
+        description: "ハードル上での体の最低部位との余裕高"
       },
-      // 新規メイン6項目
+      // 新規6項目
       {
         key: "vx_mps",
         label_ja: "水平速度",
         value: current.vx_mps.toFixed(2),
         unit: "m/s",
-        ...calculateDelta(current.vx_mps, previous?.vx_mps),
         badge: "MAIN",
-        qc: "OK"
+        description: "ハードル通過時の前進速度"
       },
       {
         key: "vy_mps",
         label_ja: "垂直速度",
         value: current.vy_mps.toFixed(2),
         unit: "m/s",
-        ...calculateDelta(current.vy_mps, previous?.vy_mps),
         badge: "MAIN",
-        qc: "OK"
+        description: "踏切時の上向き速度"
       },
       {
         key: "theta_to_deg",
         label_ja: "踏切角度",
         value: current.theta_to_deg.toFixed(1),
         unit: "°",
-        ...calculateDelta(current.theta_to_deg, previous?.theta_to_deg),
         badge: "MAIN",
-        qc: hasQCIssue ? "REFERENCE" : "OK"
+        description: "踏切時の体の前傾角度"
       },
       {
         key: "total_air_distance_m",
-        label_ja: "総移動距離（空中）",
+        label_ja: "総移動距離",
         value: current.total_air_distance_m.toFixed(2),
         unit: "m",
-        ...calculateDelta(current.total_air_distance_m, previous?.total_air_distance_m),
         badge: "MAIN",
-        qc: hasQCIssue ? "REFERENCE" : "OK"
+        description: "踏切から着地までの水平総距離"
       },
       {
         key: "flight_ratio",
         label_ja: "滞空時間比率",
         value: (current.flight_ratio * 100).toFixed(1),
         unit: "%",
-        ...calculateDelta(current.flight_ratio, previous?.flight_ratio),
         badge: "MAIN",
-        qc: "OK"
+        description: "全動作時間に対する滞空時間の割合"
       },
       {
         key: "cadence_hz",
         label_ja: "ケイデンス",
         value: current.cadence_hz.toFixed(2),
         unit: "歩/秒",
-        ...calculateDelta(current.cadence_hz, previous?.cadence_hz),
         badge: "MAIN",
-        qc: "OK"
-      },
-      // サブ2項目
-      {
-        key: "theta_la_deg",
-        label_ja: "着地角度",
-        value: current.theta_la_deg.toFixed(1),
-        unit: "°",
-        ...calculateDelta(current.theta_la_deg, previous?.theta_la_deg),
-        badge: "SUB",
-        qc: "REFERENCE"
-      },
-      {
-        key: "stride_length_m",
-        label_ja: "ストライド長",
-        value: current.stride_length_m.toFixed(2),
-        unit: "m",
-        ...calculateDelta(current.stride_length_m, previous?.stride_length_m),
-        badge: "SUB",
-        qc: "REFERENCE"
+        description: "1秒あたりの歩数（ピッチ）"
       }
     ];
     
-    let hint = "側面からバー全体が入る位置・水平固定・2〜3秒でOK";
-    if (qc_flags.includes("LOW_BAR_CONFIDENCE")) {
-      hint = "バー上端と地面が画面にしっかり入る位置で、露出を少し明るめに";
-    } else if (qc_flags.includes("WEAK_GROUND_LINE")) {
-      hint = "スマホを水平に固定して、地面ラインが長く映る位置で撮影";
-    } else if (qc_flags.includes("INSUFFICIENT_POSE")) {
-      hint = "被写体が小さすぎない距離で、ぶれを減らして撮影";
-    }
+    const hint = "側面からバー全体が入る位置・水平固定・2〜3秒でOK";
     
     return { cards, hint };
   }
@@ -584,11 +309,9 @@ class HurdleAnalyzer {
     
     const basicContainer = document.getElementById("basic-metrics-grid");
     const mainContainer = document.getElementById("main-metrics-grid");
-    const subContainer = document.getElementById("sub-metrics-grid");
     
     if (basicContainer) basicContainer.innerHTML = "";
     if (mainContainer) mainContainer.innerHTML = "";
-    if (subContainer) subContainer.innerHTML = "";
     
     uiData.cards.forEach(card => {
       const cardElement = this.createMetricCard(card);
@@ -596,8 +319,6 @@ class HurdleAnalyzer {
         basicContainer.appendChild(cardElement);
       } else if (card.badge === "MAIN" && mainContainer) {
         mainContainer.appendChild(cardElement);
-      } else if (card.badge === "SUB" && subContainer) {
-        subContainer.appendChild(cardElement);
       }
     });
   }
@@ -606,115 +327,37 @@ class HurdleAnalyzer {
     const div = document.createElement("div");
     div.className = `metric-item ${card.badge.toLowerCase()}`;
     
-    const arrowSymbol = card.arrow === "up" ? "▲" : 
-                        card.arrow === "down" ? "▼" : 
-                        card.arrow === "flat" ? "—" : "";
-    const arrowClass = card.arrow === "up" ? "arrow-up" : 
-                       card.arrow === "down" ? "arrow-down" : 
-                       card.arrow === "flat" ? "arrow-flat" : "";
-    
-    const deltaText = card.delta !== null ? 
-      `<span class="delta ${arrowClass}">${arrowSymbol} ${Math.abs(card.delta).toFixed(1)}%</span>` : "";
-    
-    const qcBadge = card.qc === "REFERENCE" ? '<span class="qc-badge">参考</span>' : "";
-    
     div.innerHTML = `
-      ${qcBadge}
       <div class="metric-header">
         <span class="metric-label">${card.label_ja}</span>
+        <span class="metric-info" title="${card.description}">ⓘ</span>
       </div>
       <div class="metric-value-line">
         <span class="metric-value">${card.value}</span>
         <span class="metric-unit">${card.unit}</span>
-        ${deltaText}
       </div>
+      <div class="metric-description">${card.description}</div>
     `;
     
     return div;
   }
   
-  private saveResults(): void {
-    if (!this.currentUser) {
-      alert("選手が選択されていません");
-      return;
-    }
-    
-    const metrics = this.getCurrentMetrics();
-    const data = {
-      athlete_id: this.currentUser.id,
-      athlete_name: this.currentUser.name,
-      grade: this.currentUser.grade,
-      timestamp: new Date().toISOString(),
-      hurdle_height_cm: parseFloat((document.getElementById("hurdle-height") as HTMLSelectElement).value),
-      metrics,
-      qc_flags: ["OK"]
-    };
-    
-    const dataStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hurdle_${this.currentUser.name}_${Date.now()}.json`;
-    a.click();
-  }
-  
-  private exportToCSV(): void {
-    if (!this.currentUser) {
-      alert("選手が選択されていません");
-      return;
-    }
-    
-    const cards = document.querySelectorAll(".metric-item");
-    let csv = `選手名,${this.currentUser.name}\\n`;
-    csv += `学年,${this.currentUser.grade || "未設定"}\\n`;
-    csv += `日時,${new Date().toLocaleString()}\\n`;
-    csv += `ハードル高さ,${(document.getElementById("hurdle-height") as HTMLSelectElement).value}cm\\n\\n`;
-    csv += `項目,値,単位,前回比\\n`;
-    
-    cards.forEach((card: any) => {
-      const label = card.querySelector(".metric-label")?.textContent;
-      const value = card.querySelector(".metric-value")?.textContent;
-      const unit = card.querySelector(".metric-unit")?.textContent;
-      const delta = card.querySelector(".delta")?.textContent || "";
-      if (label && value) {
-        csv += `${label},${value},${unit},${delta}\\n`;
-      }
-    });
-    
-    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-    const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hurdle_${this.currentUser.name}_${Date.now()}.csv`;
-    a.click();
-  }
-  
   private shareResults(): void {
-    if (!this.currentUser) {
-      alert("選手が選択されていません");
-      return;
-    }
-    
     const cards = document.querySelectorAll(".metric-item");
-    let text = `ハードル動作解析結果\\n選手: ${this.currentUser.name}\\n\\n`;
+    let text = "ハードル動作解析結果\\n\\n";
     
     cards.forEach((card: any) => {
       const label = card.querySelector(".metric-label")?.textContent;
       const value = card.querySelector(".metric-value")?.textContent;
       const unit = card.querySelector(".metric-unit")?.textContent;
-      const delta = card.querySelector(".delta")?.textContent || "";
       if (label && value) {
-        text += `${label}: ${value}${unit} ${delta}\\n`;
+        text += `${label}: ${value}${unit}\\n`;
       }
     });
     
     if (navigator.share) {
       navigator.share({
-        title: `${this.currentUser.name}のハードル動作解析結果`,
+        title: "ハードル動作解析結果",
         text: text
       });
     } else {
@@ -723,7 +366,6 @@ class HurdleAnalyzer {
     }
   }
   
-  // 他のメソッドは同じ
   private async handleVideoUpload(file: File): Promise<void> {
     const video = document.getElementById("video") as HTMLVideoElement;
     const videoPreview = document.getElementById("video-preview");
@@ -742,12 +384,8 @@ class HurdleAnalyzer {
         
         setTimeout(() => {
           const metrics = this.generateRealisticMetrics(hurdleHeight);
-          const qc_flags = ["OK"];
-          const uiData = this.generateUIData(metrics, this.previousMetrics, qc_flags);
+          const uiData = this.generateUIData(metrics);
           this.showResults(uiData);
-          
-          this.savePreviousResults(metrics);
-          this.previousMetrics = metrics;
         }, 2000);
       };
     }
@@ -818,6 +456,50 @@ class HurdleAnalyzer {
     }
   }
   
+  private saveResults(): void {
+    const metrics = this.getCurrentMetrics();
+    const data = {
+      timestamp: new Date().toISOString(),
+      hurdle_height_cm: parseFloat((document.getElementById("hurdle-height") as HTMLSelectElement).value),
+      metrics
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hurdle_${Date.now()}.json`;
+    a.click();
+  }
+  
+  private exportToCSV(): void {
+    const cards = document.querySelectorAll(".metric-item");
+    let csv = `日時,${new Date().toLocaleString()}\\n`;
+    csv += `ハードル高さ,${(document.getElementById("hurdle-height") as HTMLSelectElement).value}cm\\n\\n`;
+    csv += `項目,値,単位,説明\\n`;
+    
+    cards.forEach((card: any) => {
+      const label = card.querySelector(".metric-label")?.textContent;
+      const value = card.querySelector(".metric-value")?.textContent;
+      const unit = card.querySelector(".metric-unit")?.textContent;
+      const description = card.querySelector(".metric-description")?.textContent;
+      if (label && value) {
+        csv += `${label},${value},${unit},"${description}"\\n`;
+      }
+    });
+    
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hurdle_${Date.now()}.csv`;
+    a.click();
+  }
+  
   private getCurrentMetrics(): any {
     const cards = document.querySelectorAll(".metric-item");
     const metrics: any = {};
@@ -836,11 +518,9 @@ class HurdleAnalyzer {
         "水平速度": "vx_mps",
         "垂直速度": "vy_mps",
         "踏切角度": "theta_to_deg",
-        "総移動距離（空中）": "total_air_distance_m",
+        "総移動距離": "total_air_distance_m",
         "滞空時間比率": "flight_ratio_pct",
-        "ケイデンス": "cadence_hz",
-        "着地角度": "theta_la_deg",
-        "ストライド長": "stride_length_m"
+        "ケイデンス": "cadence_hz"
       };
       
       const key = labelToKey[label];
