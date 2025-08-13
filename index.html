@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <title>ハードル動作解析</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0d2818">
+  <meta name="theme-color" content="#00BFA5">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>
     if ('serviceWorker' in navigator) {
@@ -70,58 +70,71 @@
         <h2>測定結果</h2>
         
         <div class="metrics-container">
-          <div class="metric-row">
-            <div class="metric-icon">⏱️</div>
-            <div class="metric-info">
-              <div class="metric-label">飛行時間</div>
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-icon">⏱️</span>
+                <span class="metric-label">滞空時間</span>
+              </div>
+              <div class="metric-value-line">
+                <span class="metric-value" id="flight-time">--</span>
+                <span class="metric-unit">秒</span>
+              </div>
             </div>
-            <div class="metric-value-wrapper">
-              <span class="metric-value" id="flight-time">--</span>
-              <span class="metric-unit">秒</span>
+            
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-icon">📏</span>
+                <span class="metric-label">踏切距離</span>
+              </div>
+              <div class="metric-value-line">
+                <span class="metric-value" id="takeoff-distance">--</span>
+                <span class="metric-unit">m</span>
+              </div>
             </div>
-          </div>
-          
-          <div class="metric-row">
-            <div class="metric-icon">📏</div>
-            <div class="metric-info">
-              <div class="metric-label">踏切距離</div>
+            
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-icon">📍</span>
+                <span class="metric-label">着地距離</span>
+              </div>
+              <div class="metric-value-line">
+                <span class="metric-value" id="landing-distance">--</span>
+                <span class="metric-unit">m</span>
+              </div>
             </div>
-            <div class="metric-value-wrapper">
-              <span class="metric-value" id="takeoff-distance">--</span>
-              <span class="metric-unit">m</span>
+            
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-icon">⚡</span>
+                <span class="metric-label">踏切接地</span>
+              </div>
+              <div class="metric-value-line">
+                <span class="metric-value" id="takeoff-contact">--</span>
+                <span class="metric-unit">秒</span>
+              </div>
             </div>
-          </div>
-          
-          <div class="metric-row">
-            <div class="metric-icon">📍</div>
-            <div class="metric-info">
-              <div class="metric-label">着地距離</div>
+            
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-icon">🎯</span>
+                <span class="metric-label">着地接地</span>
+              </div>
+              <div class="metric-value-line">
+                <span class="metric-value" id="landing-contact">--</span>
+                <span class="metric-unit">秒</span>
+              </div>
             </div>
-            <div class="metric-value-wrapper">
-              <span class="metric-value" id="landing-distance">--</span>
-              <span class="metric-unit">m</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="sub-metrics">
-          <h3>詳細データ</h3>
-          <div class="sub-metric-grid">
-            <div class="sub-metric-item">
-              <span>踏切接地</span>
-              <strong id="takeoff-contact">--</strong>
-            </div>
-            <div class="sub-metric-item">
-              <span>着地接地</span>
-              <strong id="landing-contact">--</strong>
-            </div>
-            <div class="sub-metric-item">
-              <span>最大高</span>
-              <strong id="max-height">--</strong>
-            </div>
-            <div class="sub-metric-item">
-              <span>信頼度</span>
-              <strong id="confidence">--</strong>
+            
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-icon">📊</span>
+                <span class="metric-label">クリアランス</span>
+              </div>
+              <div class="metric-value-line">
+                <span class="metric-value" id="clearance">--</span>
+                <span class="metric-unit">cm</span>
+              </div>
             </div>
           </div>
         </div>
