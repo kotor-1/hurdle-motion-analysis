@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>???????? - ???</title>
-  <script src="https://cdn.jsdelivr.net/npm/opencv.js@4.8.0/opencv.js"></script>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>ハードル動作解析 - 完全版</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#4A90E2">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -13,21 +13,22 @@
       navigator.serviceWorker.register('/sw.js');
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/opencv.js@4.8.0/opencv.js"></script>
 </head>
 <body>
   <div id="app">
     <header>
-      <h1>?? ????????????</h1>
+      <h1>🏃 ハードル動作解析システム</h1>
       <div class="height-selector">
-        <label>??????:</label>
+        <label>ハードル高さ:</label>
         <select id="hurdle-height">
           <option value="60">60 cm</option>
           <option value="70">70 cm</option>
           <option value="76.2">76.2 cm</option>
-          <option value="83.8" selected>83.8 cm (??)</option>
+          <option value="83.8" selected>83.8 cm (女子)</option>
           <option value="91.4">91.4 cm</option>
           <option value="99.1">99.1 cm</option>
-          <option value="106.7">106.7 cm (??)</option>
+          <option value="106.7">106.7 cm (男子)</option>
         </select>
       </div>
     </header>
@@ -35,9 +36,9 @@
     <main>
       <div id="input-section">
         <div class="input-buttons">
-          <button id="capture-btn" class="primary-btn">?? ??????</button>
-          <button id="upload-btn" class="primary-btn">?? ?????</button>
-          <button id="demo-btn" class="secondary-btn">?? ????</button>
+          <button id="capture-btn" class="primary-btn">📹 カメラで撮影</button>
+          <button id="upload-btn" class="primary-btn">📁 動画を選択</button>
+          <button id="demo-btn" class="secondary-btn">▶️ デモ実行</button>
         </div>
         <input type="file" id="file-input" accept="video/*" style="display:none">
       </div>
@@ -47,59 +48,59 @@
       </div>
       
       <div id="progress-section" style="display:none">
-        <h3>???...</h3>
+        <h3>解析中...</h3>
         <div class="progress-bar">
           <div class="progress-fill" id="progress-fill"></div>
         </div>
         <div class="progress-info">
           <span id="progress-percent">0%</span>
-          <span id="eta">????????...</span>
+          <span id="eta">残り時間を計算中...</span>
         </div>
       </div>
       
       <div id="results-section" style="display:none">
-        <h2>?? ????</h2>
+        <h2>📊 解析結果</h2>
         <div class="metrics-grid">
           <div class="metric-card">
-            <div class="metric-icon">??</div>
-            <div class="metric-label">????</div>
+            <div class="metric-icon">⏱️</div>
+            <div class="metric-label">飛行時間</div>
             <div class="metric-value" id="flight-time">--</div>
-            <div class="metric-unit">?</div>
+            <div class="metric-unit">秒</div>
           </div>
           <div class="metric-card">
-            <div class="metric-icon">??</div>
-            <div class="metric-label">????</div>
+            <div class="metric-icon">📏</div>
+            <div class="metric-label">踏切距離</div>
             <div class="metric-value" id="takeoff-distance">--</div>
             <div class="metric-unit">m</div>
           </div>
           <div class="metric-card">
-            <div class="metric-icon">??</div>
-            <div class="metric-label">????</div>
+            <div class="metric-icon">📍</div>
+            <div class="metric-label">着地距離</div>
             <div class="metric-value" id="landing-distance">--</div>
             <div class="metric-unit">m</div>
           </div>
         </div>
         
         <div class="sub-metrics">
-          <h3>?????</h3>
+          <h3>詳細データ</h3>
           <div class="sub-metric-item">
-            <span>??????:</span>
-            <strong id="takeoff-contact">--</strong> ?
+            <span>踏切接地時間:</span>
+            <strong id="takeoff-contact">--</strong> 秒
           </div>
           <div class="sub-metric-item">
-            <span>??????:</span>
-            <strong id="landing-contact">--</strong> ?
+            <span>着地接地時間:</span>
+            <strong id="landing-contact">--</strong> 秒
           </div>
           <div class="sub-metric-item">
-            <span>?????:</span>
+            <span>最大跳躍高:</span>
             <strong id="max-height">--</strong> cm
           </div>
         </div>
         
         <div class="action-buttons">
-          <button id="save-btn" class="save-btn">?? ?????</button>
-          <button id="retry-btn" class="retry-btn">?? ???</button>
-          <button id="export-btn" class="export-btn">?? CSV??????</button>
+          <button id="save-btn" class="save-btn">💾 結果を保存</button>
+          <button id="retry-btn" class="retry-btn">🔄 再解析</button>
+          <button id="export-btn" class="export-btn">📤 CSVエクスポート</button>
         </div>
       </div>
       
@@ -107,11 +108,10 @@
     </main>
     
     <footer>
-      <p>? 2025 Hurdle Motion Analysis | Version 1.0</p>
+      <p>© 2025 Hurdle Motion Analysis | Version 1.0</p>
     </footer>
   </div>
   
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
-
